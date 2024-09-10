@@ -1,5 +1,6 @@
 ### Ignore the nosave resources directory
 src/main/resources/nosave
+data/nosave/
 
 target/
 !.mvn/wrapper/maven-wrapper.jar

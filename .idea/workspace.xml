@@ -5,8 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e068d6d4-3e8e-4854-9b84-9607e96872f1" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/CsvReader.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/CsvReader.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,6 +47,7 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Coding Projects\TeamSorting\data\nosave" />
       <recent name="C:\Coding Projects\TeamSorting\src\main\resources\nosave" />
     </key>
   </component>
@@ -54,7 +55,7 @@
     <configuration name="CsvReader" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="pyerter.squirrel.CsvReader" />
       <module name="TeamSorting" />
-      <option name="PROGRAM_PARAMETERS" value="&quot;C:\Coding Projects\TeamSorting\src\main\resources\nosave\teamsorting_test_1.csv&quot; 1 3 3 6" />
+      <option name="PROGRAM_PARAMETERS" value="&quot;C:\Coding Projects\TeamSorting\data\nosave\teamsorting_test_1.csv&quot; 1 3 3 6" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="pyerter.squirrel.*" />
