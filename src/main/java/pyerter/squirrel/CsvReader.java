@@ -46,9 +46,9 @@ public class CsvReader {
 
         TeamSortingInput sortingInput = readProblemInputCsv(filePath, nameColumn, preferences, preferenceColumns, rolesColumn);
         if (sortingInput != null) {
-            System.out.println("Members: " + sortingInput.toPrintMemberNames());
-            System.out.println("Teams: " + sortingInput.toPrintTeams());
-            System.out.println("Roles: " + sortingInput.toPrintRoles());
+            System.out.println("Members (M): " + sortingInput.toPrintMemberNames());
+            System.out.println("Teams (T): " + sortingInput.toPrintTeams());
+            System.out.println("Roles (R): " + sortingInput.toPrintRoles());
             System.out.println("Preferences (pm): " + sortingInput.toPrintMemberPreferences());
             System.out.println("Member Roles (rm): " + sortingInput.toPrintMemberRoles());
             System.out.println("Team role requirements (rt) format, where each inner array is length of roles, each number corresponds to the number of that role required: {[# # # #] [# # # #]}");
