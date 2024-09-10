@@ -44,8 +44,18 @@ public class CsvReader {
             return;
         }
 
-        Map<String, Integer> roleMap = new HashMap<>();
-        Map<String, Integer> teamMap = new HashMap<>();
+        TeamSortingInput sortingInput = readProblemInputCsv(filePath, nameColumn, preferences, preferenceColumns, rolesColumn);
+        if (sortingInput != null) {
+            System.out.println("Members: " + sortingInput.toPrintMemberNames());
+            System.out.println("Teams: " + sortingInput.toPrintTeams());
+            System.out.println("Roles: " + sortingInput.toPrintRoles());
+            System.out.println("Preferences (pm): " + sortingInput.toPrintMemberPreferences());
+            System.out.println("Member Roles (rm): " + sortingInput.toPrintMemberRoles());
+            System.out.println("Team role requirements (rt) format, where each inner array is length of roles, each number corresponds to the number of that role required: {[# # # #] [# # # #]}");
+        }
+    }
+
+    public static TeamSortingInput readProblemInputCsv(String filePath, int nameColumn, int preferences, int[] preferenceColumns, int rolesColumn) {
         String[] roles;
         String[] teams;
         List<Member> members = new ArrayList<>();
@@ -66,12 +76,6 @@ public class CsvReader {
             }
             roles = Arrays.copyOfRange(rolesRead, 1, rolesEndIndex);
             teams = Arrays.copyOfRange(teamsRead, 1, teamsEndIndex);
-            for (int i = 0; i < roles.length; i++) {
-                roleMap.put(roles[i], i + 1);
-            }
-            for (int i = 0; i < teams.length; i++) {
-                teamMap.put(teams[i], i + 1);
-            }
 
             String[] headerRow = reader.readNext();
 
@@ -87,23 +91,14 @@ public class CsvReader {
                 Member m = new Member(name, mRoles, preferredTeams);
                 members.add(m);
             }
-
-            String[] memberNames = members.stream().map(Member::getName).map(m -> "\"" + m + "\"").toArray(String[]::new);
-            //int[][] teamPreferences = members.stream().map((m) -> m.getTeamEncodings(teamMap)).toArray(int[][]::new);
-            //int[][] memberRoles = members.stream().map((m) -> m.getRoleEncodings(roleMap)).toArray(int[][]::new);
-            String[] teamPreferences = members.stream().map((m) -> m.getTeamEncodings(teamMap)).map(Arrays::toString).toArray(String[]::new);
-            String[] memberRoles = members.stream().map((m) -> m.getRoleEncodings(roleMap)).map(Arrays::toString).toArray(String[]::new);
-            System.out.println("Members: " + Arrays.toString(memberNames).replace(",", ""));
-            System.out.println("Teams: " + Arrays.toString(Arrays.stream(teams).map(a -> "\"" + a + "\"").toArray(String[]::new)).replace(",", ""));
-            System.out.println("Roles: " + Arrays.toString(Arrays.stream(roles).map(a -> "\"" + a + "\"").toArray(String[]::new)).replace(",", ""));
-            System.out.println("Preferences (pm): " + Arrays.toString(teamPreferences).replace(",", ""));
-            System.out.println("Member Roles (rm): " + Arrays.toString(memberRoles).replace(",", ""));
-            System.out.println("Team role requirements (rt) format, where each inner array is length of roles, each number corresponds to the number of that role required: {[# # # #] [# # # #]}");
+            TeamSortingInput sortingInput = new TeamSortingInput(members, teams, roles);
+            return sortingInput;
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
         } catch (CsvValidationException e) {
             System.out.println("CsvValidationException: " + e.getMessage());
         }
+        return null;
     }
 
 }
