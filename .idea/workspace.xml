@@ -5,8 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e068d6d4-3e8e-4854-9b84-9607e96872f1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/ArrView.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Matrix.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/MatrixView.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterSolver.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Test.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSortingInput.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSortingInput.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,6 +44,7 @@
   "keyToString": {
     "Application.BasicExample.executor": "Run",
     "Application.CsvReader.executor": "Run",
+    "Application.Test.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "master",
@@ -51,7 +58,7 @@
       <recent name="C:\Coding Projects\TeamSorting\src\main\resources\nosave" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Application.Test">
     <configuration name="CsvReader" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="pyerter.squirrel.CsvReader" />
       <module name="TeamSorting" />
@@ -66,8 +73,22 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Test" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="pyerter.squirrel.Test" />
+      <module name="TeamSorting" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="pyerter.squirrel.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Application.Test" />
         <item itemvalue="Application.CsvReader" />
       </list>
     </recent_temporary>
