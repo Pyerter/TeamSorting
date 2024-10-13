@@ -19,9 +19,8 @@ public class TeamSortingInput {
     protected int[][] colsOfTeam;
     protected int[][] colsOfRole;
     protected int numbPreferences;
-    protected int[] preferenceMultipliers;
 
-    public TeamSortingInput(List<Member> members, String[] teams, String[] roles, int[] preferenceMultipliers) {
+    public TeamSortingInput(List<Member> members, String[] teams, String[] roles, int numbPreferences) {
         this.members = members;
         this.teamMap = new HashMap<>();
         for (int i = 0; i < teams.length; i++) {
@@ -75,8 +74,7 @@ public class TeamSortingInput {
             }
         }
         this.numbExplicitTeamRoles = colIndex;
-        this.preferenceMultipliers = preferenceMultipliers;
-        this.numbPreferences = preferenceMultipliers.length;
+        this.numbPreferences = numbPreferences;
     }
 
     public int numbMembers() {
@@ -169,8 +167,8 @@ public class TeamSortingInput {
         return result;
     }
 
-    public int[] getPreferenceMultipliers() {
-        return this.preferenceMultipliers;
+    public int getNumbPreferences() {
+        return this.numbPreferences;
     }
 
     public String[] calculateMemberNames() {

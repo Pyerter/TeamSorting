@@ -91,7 +91,7 @@ public class CsvReader {
                 Member m = new Member(name, mRoles, preferredTeams);
                 members.add(m);
             }
-            TeamSortingInput sortingInput = new TeamSortingInput(members, teams, roles);
+            TeamSortingInput sortingInput = new TeamSortingInput(members, teams, roles, 3);
             return sortingInput;
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());

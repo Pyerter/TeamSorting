@@ -49,7 +49,12 @@ public class TeamSorterSolver {
         MPConstraint[] constraint3 = createConstraint3MemberRoleCapabilities(solver, vars);
 
         // Create the objective function
-        MPObjective objective = createObjectiveFunction(solver, vars, input.getPreferenceMultipliers());
+        int[] preferenceMultipliers = new int[input.getNumbPreferences()];
+        for (int i = 0; i < preferenceMultipliers.length; i++) {
+            int val = preferenceMultipliers.length - i;
+            preferenceMultipliers[i] = val * val;
+        }
+        MPObjective objective = createObjectiveFunction(solver, vars, preferenceMultipliers);
         objective.setMaximization(); // we maximize it
 
         System.out.println("Solving with " + solver.solverVersion());

@@ -5,13 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e068d6d4-3e8e-4854-9b84-9607e96872f1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/ArrView.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Matrix.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/MatrixView.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterSolver.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Test.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/CsvReader.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/CsvReader.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterSolver.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterSolver.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSortingInput.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSortingInput.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -40,18 +37,18 @@
   <component name="ProjectViewState">
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.BasicExample.executor": "Run",
-    "Application.CsvReader.executor": "Run",
-    "Application.Test.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "master",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Coding Projects/TeamSorting"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.BasicExample.executor&quot;: &quot;Run&quot;,
+    &quot;Application.CsvReader.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Test.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Coding Projects/TeamSorting&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Coding Projects\TeamSorting\data\nosave" />
