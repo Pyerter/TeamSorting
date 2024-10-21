@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="ArtifactsWorkspaceSettings">
+    <artifacts-to-build>
+      <artifact name="TeamSorting:jar" />
+    </artifacts-to-build>
+  </component>
   <component name="AutoImportSettings">
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e068d6d4-3e8e-4854-9b84-9607e96872f1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/app/example_format.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/example_format.xlsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterInputReadingException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/artifacts/TeamSorting_jar.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/run.bat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/run.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/META-INF/MANIFEST.MF" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/ArrView.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/BasicExample.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/CsvReader.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/CsvReader.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Matrix.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/MatrixView.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Member.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Member.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterSolver.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterSolver.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSortingInput.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSortingInput.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Test.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,11 +49,22 @@
     "Application.CsvReader.executor": "Run",
     "Application.Main.executor": "Run",
     "Application.Test.executor": "Run",
+    "JAR Application.TeamSorting-1.0-SNAPSHOT.jar.executor": "Run",
+    "JAR Application.Unnamed.executor": "Run",
+    "Maven.TeamSorting [compile].executor": "Run",
+    "Maven.TeamSorting [deploy].executor": "Run",
+    "Maven.TeamSorting [install].executor": "Run",
+    "Maven.TeamSorting [org.apache.maven.plugins:maven-jar-plugin:3.3.0:jar].executor": "Run",
+    "Maven.TeamSorting [package].executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "master",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Coding Projects/TeamSorting/data"
+    "last_opened_file_path": "C:/Coding Projects/TeamSorting/app/TeamSorting_jar/TeamSorting.jar",
+    "project.structure.last.edited": "Artifacts",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "project.propCompiler"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -69,7 +77,7 @@
       <recent name="C:\Coding Projects\TeamSorting\src\main\resources\nosave" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.Main">
+  <component name="RunManager" selected="JAR Application.Deploy and Run">
     <configuration name="CsvReader" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="pyerter.squirrel.CsvReader" />
       <module name="TeamSorting" />
@@ -111,13 +119,52 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="TeamSorting-1.0-SNAPSHOT.jar" type="JarApplication" temporary="true">
+      <option name="JAR_PATH" value="$PROJECT_DIR$/target/TeamSorting-1.0-SNAPSHOT.jar" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TeamSorting [install]" type="MavenRunConfiguration" factoryName="Maven">
+      <MavenSettings>
+        <option name="myGeneralSettings" />
+        <option name="myRunnerSettings" />
+        <option name="myRunnerParameters">
+          <MavenRunnerParameters>
+            <option name="cmdOptions" />
+            <option name="profiles">
+              <set />
+            </option>
+            <option name="goals">
+              <list>
+                <option value="install" />
+                <option value="assembly:single" />
+              </list>
+            </option>
+            <option name="multimoduleDir" />
+            <option name="pomFileName" value="pom.xml" />
+            <option name="profilesMap">
+              <map />
+            </option>
+            <option name="projectsCmdOptionValues">
+              <list />
+            </option>
+            <option name="resolveToWorkspace" value="false" />
+            <option name="workingDirPath" value="$PROJECT_DIR$" />
+          </MavenRunnerParameters>
+        </option>
+      </MavenSettings>
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Application.Main" />
       <item itemvalue="Application.CsvReader" />
       <item itemvalue="Application.Test" />
+      <item itemvalue="JAR Application.Deploy and Run" />
+      <item itemvalue="JAR Application.TeamSorting-1.0-SNAPSHOT.jar" />
+      <item itemvalue="Maven.TeamSorting [install]" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="JAR Application.TeamSorting-1.0-SNAPSHOT.jar" />
         <item itemvalue="Application.Main" />
         <item itemvalue="Application.CsvReader" />
         <item itemvalue="Application.Test" />

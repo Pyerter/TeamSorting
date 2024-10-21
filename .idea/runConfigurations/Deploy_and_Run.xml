@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Deploy and Run" type="JarApplication">
+    <option name="JAR_PATH" value="$PROJECT_DIR$/app/TeamSorting.jar" />
+    <option name="PROGRAM_PARAMETERS" value="app/example_format.csv --debug=True" />
+    <option name="WORKING_DIRECTORY" value="C:\Coding Projects\TeamSorting" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2">
+      <option name="BuildArtifacts" enabled="true">
+        <artifact name="TeamSorting:jar" />
+      </option>
+    </method>
+  </configuration>
+</component>

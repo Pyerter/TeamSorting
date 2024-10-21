@@ -1,0 +1,1 @@
+java -jar ./TeamSorting.jar $1 $2
