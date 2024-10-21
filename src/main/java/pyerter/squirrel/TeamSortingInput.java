@@ -20,7 +20,7 @@ public class TeamSortingInput {
     protected int[][] colsOfRole;
     protected int numbPreferences;
 
-    public TeamSortingInput(List<Member> members, String[] teams, String[] roles, int numbPreferences) {
+    public TeamSortingInput(List<Member> members, String[] teams, String[] roles, int numbPreferences, int[][] teamRoleRequirements, int[] minimumMemberCounts) {
         this.members = members;
         this.teamMap = new HashMap<>();
         for (int i = 0; i < teams.length; i++) {
@@ -34,18 +34,15 @@ public class TeamSortingInput {
         this.roles = roles;
         this.memberNames = calculateMemberNames();
         this.minMembersPerTeam = 5;
-        this.teamRoleRequirements = new int[numbRoles()][numbTeams()];
-        colsOfRole = new int[numbRoles()][];
-        colsOfTeam = new int[numbTeams()][];
+        this.teamRoleRequirements = teamRoleRequirements;
+        colsOfRole = new int[roles.length][];
+        colsOfTeam = new int[teams.length][];
         int[] numbColsOfRole = new int[numbRoles()];
         int[] numbColsOfTeam = new int[numbTeams()];
         for (int i = 0; i < teamRoleRequirements.length; i++) {
-            Arrays.fill(teamRoleRequirements[i], 1);
             for (int j = 0; j < teamRoleRequirements[i].length; j++) {
-                for (int req = 0; req < teamRoleRequirements[i][j]; req++) {
-                    numbColsOfTeam[i]++;
-                    numbColsOfRole[j]++;
-                }
+                numbColsOfTeam[i] += teamRoleRequirements[i][j];
+                numbColsOfRole[j] += teamRoleRequirements[i][j];
             }
         }
         for (int i = 0; i < numbColsOfRole.length; i++) {
@@ -53,24 +50,37 @@ public class TeamSortingInput {
             numbColsOfRole[i] = 0; // now use as a counter to indicate next point in array while adding indexes
         }
         for (int i = 0; i < numbColsOfTeam.length; i++) {
-            colsOfTeam[i] = new int[numbColsOfTeam[i]];
+            colsOfTeam[i] = new int[Math.max(numbColsOfTeam[i], minimumMemberCounts[i])];
             numbColsOfTeam[i] = 0; // now use as a counter to indicate next point in array while adding indexes
         }
         this.augmentedTeamRoleIndex = new HashMap<>();
         jToRole = new HashMap<>();
         jToTeam = new HashMap<>();
         int colIndex = 0;
+        int[] teamMinMemberColumns = new int[teams.length];
         for (int i = 0; i < teamRoleRequirements.length; i++) {
             for (int j = 0; j < teamRoleRequirements[i].length; j++) {
                 int teamRoleIndex = i * numbRoles() + j;
+                augmentedTeamRoleIndex.put(teamRoleIndex, colIndex);
                 for (int numbRole = 0; numbRole < teamRoleRequirements[i][j]; numbRole++) {
-                    augmentedTeamRoleIndex.put(teamRoleIndex, colIndex);
-                    colIndex++;
                     colsOfRole[j][numbColsOfRole[j]] = colIndex;
                     colsOfTeam[i][numbColsOfTeam[i]] = colIndex;
+                    numbColsOfRole[j]++;
+                    numbColsOfTeam[i]++;
+                    jToTeam.put(colIndex, i);
+                    jToRole.put(colIndex, j);
+                    teamMinMemberColumns[i]++;
+                    colIndex++;
                 }
-                jToTeam.put(teamRoleIndex, i);
-                jToRole.put(teamRoleIndex, j);
+            }
+        }
+        for (int i = 0; i < teamMinMemberColumns.length; i++) {
+            while (teamMinMemberColumns[i] < minimumMemberCounts[i]) {
+                colsOfTeam[i][numbColsOfTeam[i]] = colIndex;
+                numbColsOfTeam[i]++;
+                jToTeam.put(colIndex, i);
+                teamMinMemberColumns[i]++;
+                colIndex++;
             }
         }
         this.numbExplicitTeamRoles = colIndex;
@@ -183,6 +193,10 @@ public class TeamSortingInput {
         return Arrays.toString(Arrays.stream(getMemberNames()).map(m -> "\"" + m + "\"").toArray(String[]::new)).replace(",", "");
     }
 
+    public int[] getMemberPreferences(int member) {
+        return members.get(member).getTeamEncodings(teamMap);
+    }
+
     public int[][] getMemberPreferences() {
         return members.stream().map((m) -> m.getTeamEncodings(teamMap)).toArray(int[][]::new);
     }
@@ -204,6 +218,18 @@ public class TeamSortingInput {
         return members.stream().map((m) -> m.getRoleEncodings(roleMap)).toArray(int[][]::new);
     }
 
+    public int[] getMemberRoles(int member) {
+        return members.get(member).getRoleEncodings(roleMap);
+    }
+
+    public int getTeamRoleRequiremenet(int t, int r) {
+        return teamRoleRequirements[t][r];
+    }
+
+    public int getTeamMinimumMembers(int t) {
+        return colsOfTeam[t].length;
+    }
+
     public String toPrintMemberRoles() {
         return Arrays.toString(
                 members.stream()
@@ -223,6 +249,15 @@ public class TeamSortingInput {
 
     public String toPrintRoles() {
         return Arrays.toString(Arrays.stream(roles).map(a -> "\"" + a + "\"").toArray(String[]::new)).replace(",", "");
+    }
+
+    public String toPrintTeamRoleRequirements() {
+        String[] teamRoleReqStrings = new String[teamRoleRequirements.length];
+        for (int i = 0; i < teamRoleReqStrings.length; i++) {
+            teamRoleReqStrings[i] = Arrays.toString(Arrays.stream(teamRoleRequirements[i]).mapToObj(String::valueOf).map(a -> "\"" + a + "\"").toArray(String[]::new)).replace(",", "");
+        }
+        String returnString = Arrays.toString(teamRoleReqStrings);
+        return "{" + returnString.substring(1, returnString.length() - 1).replace(",", "") + "}";
     }
 
     public int getMinMembersPerTeam() {

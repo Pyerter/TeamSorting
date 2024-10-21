@@ -47,6 +47,7 @@ public class TeamSorterSolver {
         MPConstraint[] constraint1 = createConstraint1TeamRoleColumnSums(solver, vars);
         MPConstraint[] constraint2 = createConstraint2MemberRowSums(solver, vars);
         MPConstraint[] constraint3 = createConstraint3MemberRoleCapabilities(solver, vars);
+        MPConstraint[] constraint4 = createConstraint4TeamSizeRequirements(solver, vars);
 
         // Create the objective function
         int[] preferenceMultipliers = new int[input.getNumbPreferences()];
@@ -105,10 +106,14 @@ public class TeamSorterSolver {
             int t = input.getJToTeam(constraintIndex);
             int r = input.getJToRole(constraintIndex);
             MPConstraint constraint;
-            if (t < 0 || r < 0)
-                constraint = solver.makeConstraint(0, 1, String.format("colsumextra%dcolumn%d", constraintIndex - beginExtraColumns, constraintIndex));
-            else
-                constraint = solver.makeConstraint(0, 1, String.format("colsumteam%drole%dcolumn%d", t, r, constraintIndex));
+            if (t >= 0) {
+                if (r < 0)
+                    constraint = solver.makeConstraint(1, 1, String.format("colsumteam%droleanydcolumn%d", t, constraintIndex));
+                else
+                    constraint = solver.makeConstraint(1, 1, String.format("colsumteam%drole%dcolumn%d", t, r, constraintIndex));
+            } else {
+                constraint = solver.makeConstraint(1, 1, String.format("colsumextra%dcolumn%d", constraintIndex - beginExtraColumns, constraintIndex));
+            }
             constraints[constraintIndex] = constraint;
             forEach(getColumns(vars, constraintIndex), (v, i, j) -> {
                 constraint.setCoefficient(v, 1);
@@ -121,10 +126,22 @@ public class TeamSorterSolver {
     protected MPConstraint[] createConstraint2MemberRowSums(MPSolver solver, MPVariable[][] vars) {
         MPConstraint[] constraints = new MPConstraint[input.numbRows()];
         for (int m = 0; m < constraints.length; m++) {
-            MPConstraint constraint = solver.makeConstraint(0, 1, String.format("rowsummember%drow%d", m, m));;
+            MPConstraint constraint = solver.makeConstraint(1, 1, String.format("rowsummember%drow%d", m, m));;
             constraints[m] = constraint;
+            // System.out.printf("Preferred teams for member %d: %s%n", m, Arrays.toString(input.getMember(m).getPreferredTeams()));
+            int[] memberPrefs = input.getMemberPreferences(m);
             forEach(getRows(vars, m), (v, i, j) -> {
-                constraint.setCoefficient(v, 1);
+                int t = input.getJToTeam(j);
+                if (t < 0) {
+                    constraint.setCoefficient(v, 1);
+                    return;
+                }
+                for (int team = 0; team < memberPrefs.length; team++) {
+                    if (memberPrefs[team] == t) {
+                        constraint.setCoefficient(v, 1);
+                        break;
+                    }
+                }
             });
         }
         return constraints;
@@ -135,9 +152,10 @@ public class TeamSorterSolver {
         for (int m = 0; m < constraints.length; m++) {
             MPConstraint constraint = solver.makeConstraint(NEGATIVE_INFINITY, 0, String.format("membercapableroles%d", m));
             constraints[m] = constraint;
-            int[] memberRoles = input.getMemberRoles()[m];
+            int[] memberRoles = input.getMemberRoles(m);
             forEach(getRows(vars, m), (v, i, j) -> {
                 int role = input.getJToRole(j);
+                if (role == -1) return;
                 boolean contained = false;
                 for (int r = 0; r < memberRoles.length; r++) {
                     if (memberRoles[r] == role) {
@@ -153,12 +171,28 @@ public class TeamSorterSolver {
         return constraints;
     }
 
+    protected MPConstraint[] createConstraint4TeamSizeRequirements(MPSolver solver, MPVariable[][] vars) {
+        MPConstraint[] constraints = new MPConstraint[input.numbTeams()];
+        int constraintIndex = 0;
+        for (int t = 0; t < input.numbTeams(); t++) {
+            int[] tColumns = input.getColsOfTeam(t);
+            MPConstraint constraint = solver.makeConstraint(input.getTeamMinimumMembers(t), INFINITY, String.format("team%dminmembers", t));
+            constraints[constraintIndex] = constraint;
+            forEach(getColumns(vars, tColumns), (v, i, j) -> {
+                constraint.setCoefficient(v, 1);
+            });
+            constraintIndex++;
+        }
+        return constraints;
+    }
+
     protected MPObjective createObjectiveFunction(MPSolver solver, MPVariable[][] vars, int ... prefValues) {
         MPObjective objective = solver.objective();
         forEach(vars, (v, i, j) -> {
             Member m = input.getMember(i);
             String[] preferences = m.getPreferredTeams();
             int teamCol = input.getJToTeam(j);
+            if (teamCol < 0) return;
             for (int p = 0; p < preferences.length; p++) {
                 Integer currentPref = input.getTeamMap().get(preferences[p]);
                 if (currentPref != null && currentPref == teamCol) {
@@ -209,6 +243,7 @@ public class TeamSorterSolver {
         protected double[] teamAssignments;
         protected int[] assignedTeams;
         protected String[] assignedTeamNames;
+        protected String[] assignedRoleNames;
 
         public MemberAssignment(TeamSortingInput input, int member, MPVariable[] memberRow) {
             this.member = member;
@@ -217,16 +252,19 @@ public class TeamSorterSolver {
             int numbAssignedTeams = 0;
             for (int i = 0; i < memberRow.length; i++) {
                 teamAssignments[i] = memberRow[i].solutionValue();
-                if (teamAssignments[i] != 0)
+                if (teamAssignments[i] != 0) {
                     numbAssignedTeams++;
+                }
             }
             assignedTeams = new int[numbAssignedTeams];
             assignedTeamNames = new String[numbAssignedTeams];
+            assignedRoleNames = new String[numbAssignedTeams];
             int current = 0;
             for (int i = 0; i < teamAssignments.length; i++) {
                 if (teamAssignments[i] != 0) {
                     assignedTeams[current] = i;
-                    assignedTeamNames[current] = input.getTeams()[i];
+                    assignedTeamNames[current] = input.getJToTeam(i) >= 0 ? input.getTeams()[input.getJToTeam(i)] : "<Any>";
+                    assignedRoleNames[current] = input.getJToRole(i) >= 0 ? input.getRoles()[input.getJToRole(i)] : "<Any>";
                     current++;
                 }
             }
@@ -253,12 +291,12 @@ public class TeamSorterSolver {
         }
 
         public String toPrintAssignment() {
-            if (assignedTeams.length == 0) return String.format("Member %s (%d) assigned to no team!?", m.getName(), member);
-            if (assignedTeams.length == 1) return String.format("Member %s (%d) assigned to team %s (%d) with value %f", m.getName(), member, assignedTeamNames[0], assignedTeams[0], teamAssignments[assignedTeams[0]]);
-            String result = String.format("Member %s (%d) assigned to teams: ", m.getName(), member);
-            String[] teams = new String[teamAssignments.length];
+            if (assignedTeams.length == 0) return String.format("Member (%d) %s assigned to no team", member, m.getName());
+            if (assignedTeams.length == 1) return String.format("Member (%d) %s assigned to %s as %s (%d) (x=%f): Preference %d", member, m.getName(), assignedTeamNames[0], assignedRoleNames[0], assignedTeams[0], teamAssignments[assignedTeams[0]], m.getPreference(assignedTeamNames[0]) + 1);
+            String result = String.format("Member (%d) %s assigned to teams: ", member, m.getName());
+            String[] teams = new String[assignedTeams.length];
             for (int i = 0; i < teams.length; i++) {
-                teams[i] = String.format("%s (%d) with value %f", assignedTeamNames[i], assignedTeams[i], teamAssignments[assignedTeams[i]]);
+                teams[i] = String.format("%s as %s (%d) (x=%f): Preference %d", assignedTeamNames[i], assignedRoleNames[i], assignedTeams[i], teamAssignments[assignedTeams[i]], m.getPreference(assignedTeamNames[i]));
             }
             result += Arrays.toString(teams);
             return result;

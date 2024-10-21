@@ -17,88 +17,111 @@ public class CsvReader {
             System.out.println("File: " + args[0]);
         }
         String filePath = args[0];
-        int nameColumn;
-        int preferences;
-        int[] preferenceColumns;
-        int rolesColumn;
-        if (args.length > 4) {
-            nameColumn = Integer.parseInt(args[1]);
-            preferences = Integer.parseInt(args[2]);
-            preferenceColumns = new int[preferences];
-            rolesColumn = Integer.parseInt(args[args.length - 1]);
-            if (args.length == 5) {
-                preferenceColumns[0] = Integer.parseInt(args[3]);
-                for (int i = 1; i < preferences; i++) {
-                    preferenceColumns[i] = preferenceColumns[0] + i;
-                }
-            } else if (args.length == 4 + preferences) {
-                for (int i = 0; i < preferences; i++) {
-                    preferenceColumns[i] = Integer.parseInt(args[i + 3]);
-                }
-            } else {
-                System.out.println("Not enough preference columns given! Expected 1 or " + preferences + " but got " + (args.length - 4));
-            }
-        } else {
-            System.out.println("Not enough arguments! Expecting at least 5 arguments [String: file, int: nameColumn, int: numbPreferences, [int: preferenceColumns], int: rolesColumn");
-            System.out.println("Argument numbPreferences can either be a single number (representing the first column of preferences) or a number of separate int arguments equal to number of preferences");
-            return;
-        }
 
-        TeamSortingInput sortingInput = readProblemInputCsv(filePath, nameColumn, preferences, preferenceColumns, rolesColumn);
-        if (sortingInput != null) {
-            System.out.println("Members (M): " + sortingInput.toPrintMemberNames());
-            System.out.println("Teams (T): " + sortingInput.toPrintTeams());
-            System.out.println("Roles (R): " + sortingInput.toPrintRoles());
-            System.out.println("Preferences (pm): " + sortingInput.toPrintMemberPreferences());
-            System.out.println("Member Roles (rm): " + sortingInput.toPrintMemberRoles());
-            System.out.println("Team role requirements (rt) format, where each inner array is length of roles, each number corresponds to the number of that role required: {[# # # #] [# # # #]}");
+        try {
+            TeamSortingInput sortingInput = readProblemInputCsv(filePath);
+            if (sortingInput != null) {
+                System.out.println("Members (M): " + sortingInput.toPrintMemberNames());
+                System.out.println("Teams (T): " + sortingInput.toPrintTeams());
+                System.out.println("Roles (R): " + sortingInput.toPrintRoles());
+                System.out.println("Preferences (pm): " + sortingInput.toPrintMemberPreferences());
+                System.out.println("Member Roles (rm): " + sortingInput.toPrintMemberRoles());
+                System.out.println("Team role requirements (rt): " + sortingInput.toPrintTeamRoleRequirements());
+            }
+        } catch (TeamSorterInputReadingException e) {
+            System.out.println("Exception while reading csv file: " + e.getMessage());
+            if (e.hasChildException()) {
+                e.getChildException().printStackTrace();
+            }
         }
     }
 
-    public static TeamSortingInput readProblemInputCsv(String filePath, int nameColumn, int preferences, int[] preferenceColumns, int rolesColumn) {
+    public static TeamSortingInput readProblemInputCsv(String filePath) throws TeamSorterInputReadingException {
+        // values depending on the layout of the csv
+        int countsRow = 1;
+        int teamReqRowStart = 3; // >countsRow
+        int teamCount;
+        int roleCount;
+        int prefCount;
+        int memberCount;
         String[] roles;
         String[] teams;
-        List<Member> members = new ArrayList<>();
+        int[] minimumMemberCounts;
+        List<Member> members;
+
         try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
             String[] nextLine;
 
-            String[] rolesRead = reader.readNext();
-            String[] teamsRead = reader.readNext();
-            int rolesEndIndex = 0;
-            int teamsEndIndex = 0;
-            for (int i = 0; i < rolesRead.length; i++) {
-                if (!rolesRead[i].isEmpty()) rolesEndIndex++;
-                else break;
-            }
-            for (int i = 0; i < teamsRead.length; i++) {
-                if (!teamsRead[i].isEmpty()) teamsEndIndex++;
-                else break;
-            }
-            roles = Arrays.copyOfRange(rolesRead, 1, rolesEndIndex);
-            teams = Arrays.copyOfRange(teamsRead, 1, teamsEndIndex);
+            // Read counts of teams, roles, prefs, members
+            reader.readNext(); // 1
+            nextLine = reader.readNext(); // 2
+            teamCount = Integer.parseInt(nextLine[0]);
+            roleCount = Integer.parseInt(nextLine[1]);
+            prefCount = Integer.parseInt(nextLine[2]);
+            memberCount = Integer.parseInt(nextLine[3]);
+            roles = new String[roleCount];
+            teams = new String[teamCount];
+            members = new ArrayList<>(memberCount);
+            minimumMemberCounts = new int[teamCount];
 
-            String[] headerRow = reader.readNext();
+            // Read names of roles in row 4
+            reader.readNext(); // 3
+            nextLine = reader.readNext(); // 4
+            for (int i = 0; i < roleCount; i++) {
+                roles[i] = nextLine[i + 1]; // first column is label, so add 1
+            }
 
-            while ((nextLine = reader.readNext()) != null) {
-                String name = nextLine[nameColumn];
-                String[] preferredTeams = new String[preferences];
-                int i = 0;
-                for (int j: preferenceColumns) {
-                    preferredTeams[i] = nextLine[j];
-                    i++;
+            int[][] roleRequirements = new int[teamCount][roleCount];
+
+            // Read role requirements of each team
+            for (int i = 0; i < teamCount; i++) {
+                nextLine = reader.readNext(); // 4 + i + 1
+                teams[i] = nextLine[0];
+                for (int j = 0; j < roleCount; j++) {
+                    roleRequirements[i][j] = Integer.parseInt(nextLine[j + 1]); // first column is label
                 }
-                String[] mRoles = nextLine[rolesColumn].split(", ");
-                Member m = new Member(name, mRoles, preferredTeams);
+                minimumMemberCounts[i] = Integer.parseInt(nextLine[roleCount + 2]);
+            }
+            // previous line: 4 + |T|
+
+            // Read rows containing the members
+            reader.readNext(); // 5 + |T|
+            reader.readNext(); // 6 + |T| this is a label row for the columns
+            for (int i = 0; i < memberCount; i++) {
+                nextLine = reader.readNext(); // 6 + |T| + i
+                //System.out.println("Reading member: " + Arrays.toString(nextLine));
+
+                String[] memberPrefs = new String[prefCount];
+                System.arraycopy(nextLine, 1, memberPrefs, 0, prefCount);
+                int memberRolesCounted = 0;
+                for (int j = 1 + prefCount; j < 1 + prefCount + roleCount; j++) {
+                    if (nextLine[j].equalsIgnoreCase("Y")) {
+                        memberRolesCounted++;
+                    }
+                }
+                String[] memberRoles = new String[memberRolesCounted];
+                int r = 0;
+                for (int j = 1 + prefCount; j < 1 + prefCount + roleCount; j++) {
+                    if (nextLine[j].equalsIgnoreCase("Y")) {
+                        int roleIndex = j - 1 - prefCount;
+                        memberRoles[r] = roles[roleIndex];
+                        r++;
+                    }
+                }
+                Member m = new Member(nextLine[0], memberRoles, memberPrefs);
                 members.add(m);
             }
-            TeamSortingInput sortingInput = new TeamSortingInput(members, teams, roles, 3);
+            // previous line: 6 + |T| + |M|
+
+            TeamSortingInput sortingInput = new TeamSortingInput(members, teams, roles, prefCount, roleRequirements, minimumMemberCounts);
             return sortingInput;
         } catch (IOException e) {
-            System.out.println("IOException: " + e.getMessage());
+            throw new TeamSorterInputReadingException("IOException: " + e.getMessage(), e);
         } catch (CsvValidationException e) {
-            System.out.println("CsvValidationException: " + e.getMessage());
+            throw new TeamSorterInputReadingException("CsvValidationException: " + e.getMessage(), e);
+        } catch (Exception e) {
+            throw new TeamSorterInputReadingException("Other exception while parsing: " + e.getMessage(), e);
         }
-        return null;
     }
 
 }

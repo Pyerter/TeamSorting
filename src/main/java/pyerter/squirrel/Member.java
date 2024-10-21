@@ -42,4 +42,13 @@ public class Member {
         return encodings;
     }
 
+    public int getPreference(String team) {
+        for (int i = 0; i < preferredTeams.length; i++) {
+            if (preferredTeams[i].equalsIgnoreCase(team)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
 }
