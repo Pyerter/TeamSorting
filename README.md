@@ -13,7 +13,23 @@ csv formatted appropriately. To call the jar file via the command line, use
 the following command (assuming your pwd is the top-level folder of this 
 repository):
 
-``java ./app/teamSort.jar <csv_file_path> <p>``
+``java -jar ./app/TeamSorting.jar <csv_file_path>``
+
+You can also run the batch file provided by simpling executing it 
+`app/run.sh`. If you use Linux or Mac, you can use the 
+`app/run.sh` file provided.
+
+### CSV Formatting
+The `app/example_format.csv` contains a template for formatting the csv. The 
+key parts of the template go down to rows 34. Below row 34, you can modify 
+the csv without changing the result of the program. Below those lines, I 
+have left some instructions on modifying the csv.
+
+I've also left a `app/example_format.xlsx` file that contains some formulas 
+for simple validation checking. Those formulas can tell you if the output 
+would yield no solution even before running the linear program. It simply 
+checks the total number of roles required by each team and the total number 
+of preferences for each team.
 
 ## Modifying the Code
 
