@@ -9,15 +9,21 @@ The TPP program relies on Google's OR Tools. Here is the link to the
 ## Running the Code
 To run the code, you will need a properly formatted CSV file as input. In 
 the `app` folder, you can find the relevant jar files and an accompanying 
-csv formatted appropriately. To call the jar file via the command line, use 
+csv formatted appropriately.
+
+You can run the code by executing `app\run.bat` if you use Windows or 
+`app/run.sh` if you use Linux or Mac. Your second argument should be the 
+file path to the formatted csv. For example, on Windows and Linux respectively:
+
+``.\app\run.bat .\app\example_format.csv``
+
+``./app/run.sh ./app/example_format.csv``
+
+To call the jar file via the command line, use 
 the following command (assuming your pwd is the top-level folder of this 
 repository):
 
 ``java -jar ./app/TeamSorting.jar <csv_file_path>``
-
-You can also run the batch file provided by simpling executing it 
-`app/run.sh`. If you use Linux or Mac, you can use the 
-`app/run.sh` file provided.
 
 ### CSV Formatting
 The `app/example_format.csv` contains a template for formatting the csv. The 
