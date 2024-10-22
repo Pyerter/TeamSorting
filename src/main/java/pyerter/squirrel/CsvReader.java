@@ -140,6 +140,7 @@ public class CsvReader {
                         j = 0;
                         while (j < friends.length) {
                             friends[j] = nextLine[j + 1];
+                            j++;
                         }
                         friendships[i] = new Friendship(friendshipName, friends);
                     }

@@ -10,12 +10,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e068d6d4-3e8e-4854-9b84-9607e96872f1" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Friendship.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/TeamSorting.jar" beforeDir="false" afterPath="$PROJECT_DIR$/app/TeamSorting.jar" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/CsvReader.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/CsvReader.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Member.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Member.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterInputReadingException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterInputReadingException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Friendship.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/Friendship.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterSolver.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSorterSolver.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSortingInput.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pyerter/squirrel/TeamSortingInput.java" afterDir="false" />
     </list>
@@ -167,8 +165,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="JAR Application.TeamSorting-1.0-SNAPSHOT.jar" />
         <item itemvalue="Application.Main" />
+        <item itemvalue="JAR Application.TeamSorting-1.0-SNAPSHOT.jar" />
         <item itemvalue="Application.CsvReader" />
         <item itemvalue="Application.Test" />
       </list>

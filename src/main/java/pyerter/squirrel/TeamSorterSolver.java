@@ -22,6 +22,8 @@ public class TeamSorterSolver {
 
     protected TeamSortingInput input;
 
+    protected boolean detailedPrinting = false;
+
     public TeamSorterSolver(TeamSortingInput input) {
         this.input = input;
     }
@@ -50,10 +52,24 @@ public class TeamSorterSolver {
         MPVariable[][] vars = createVariables(solver);
 
         // Create the constraints
+        int[] constraintCounts = new int[5];
         MPConstraint[] constraint1 = createConstraint1TeamRoleColumnSums(solver, vars);
         MPConstraint[] constraint2 = createConstraint2MemberRowSums(solver, vars);
         MPConstraint[] constraint3 = createConstraint3MemberRoleCapabilities(solver, vars);
         MPConstraint[] constraint4 = createConstraint4TeamSizeRequirements(solver, vars);
+        MPConstraint[][] constraint5 = createConstraint5FriendshipRequirements(solver, vars);
+        constraintCounts[0] = constraint1.length;
+        constraintCounts[1] = constraint2.length;
+        constraintCounts[2] = constraint3.length;
+        constraintCounts[3] = constraint4.length;
+        constraintCounts[4] = 0;
+        for (int i = 0; i < constraint5.length; i++)
+            constraintCounts[4] += constraint5[i].length;
+        System.out.printf("Created %d constraints for column sums.%n", constraintCounts[0]);
+        System.out.printf("Created %d constraints for row sums.%n", constraintCounts[1]);
+        System.out.printf("Created %d constraints for member role assignments.%n", constraintCounts[2]);
+        System.out.printf("Created %d constraints for team size requirements.%n", constraintCounts[3]);
+        System.out.printf("Created %d constraints for friendship requirements.%n", constraintCounts[4]);
 
         // Create the objective function
         int[] preferenceMultipliers = new int[input.getNumbPreferences()];
@@ -83,7 +99,7 @@ public class TeamSorterSolver {
 
         MemberAssignment[] memberAssignments = new MemberAssignment[input.numbRows()];
         for (int i = 0; i < memberAssignments.length; i++) {
-            memberAssignments[i] = new MemberAssignment(input, i, vars[i]);
+            memberAssignments[i] = new MemberAssignment(input, i, vars[i], detailedPrinting);
             System.out.println(memberAssignments[i].toPrintAssignment());
         }
 
@@ -192,6 +208,46 @@ public class TeamSorterSolver {
         return constraints;
     }
 
+    protected MPConstraint[][] createConstraint5FriendshipRequirements(MPSolver solver, MPVariable[][] vars) {
+        // For each friendship, there needs to be a set of constraints for each team
+        // For each friendship-team combo, there needs to be a constraint for each member where
+        // their assignment to the team is |F_i| and all other member's assignments are -1.
+        // Then, the constraint is only met if they sum to be 0.
+
+        Friendship[] friendships = input.getFriendships();
+        MPConstraint[][] constraints = new MPConstraint[friendships.length][];
+        for (int f = 0; f < constraints.length; f++) {
+            Member[] members = friendships[f].getMembers();
+            int[] memberIndexes = Arrays.stream(members).mapToInt(m -> input.getMemberIndex(m)).toArray();
+            Arrays.sort(memberIndexes);
+            int friendshipSize = members.length - 1;
+            MPConstraint[] friendshipConstraints = new MPConstraint[members.length * input.numbTeams()];
+            constraints[f] = friendshipConstraints;
+            int constraintIndex = 0;
+            for (int m = 0; m < members.length; m++) {
+                for (int t = 0; t < input.numbTeams(); t++) {
+                    //System.out.printf("Created friendship constraint for member %d on team %d%n", m, t);
+                    MPConstraint constraint = solver.makeConstraint(0, 0, String.format("member%dfriendshipteam%d", m, t));
+                    friendshipConstraints[constraintIndex] = constraint;
+                    int[] teamCols = input.getColsOfTeam(t);
+                    int currentMember = m;
+                    forEach(vars, (v, i, j) -> {
+                        if ((Arrays.binarySearch(teamCols, j) >= 0 || input.getJToTeam(j) < 0) && Arrays.binarySearch(memberIndexes, i) >= 0) {
+                            if (i == memberIndexes[currentMember]) {
+                                //System.out.printf("Added coefficient to row, column %d, %d%n", i, j);
+                                constraint.setCoefficient(v, friendshipSize);
+                            } else {
+                                constraint.setCoefficient(v, -1);
+                            }
+                        }
+                    });
+                    constraintIndex++;
+                }
+            }
+        }
+        return constraints;
+    }
+
     protected MPObjective createObjectiveFunction(MPSolver solver, MPVariable[][] vars, int ... prefValues) {
         MPObjective objective = solver.objective();
         forEach(vars, (v, i, j) -> {
@@ -250,8 +306,11 @@ public class TeamSorterSolver {
         protected int[] assignedTeams;
         protected String[] assignedTeamNames;
         protected String[] assignedRoleNames;
+        protected int positiveTeams;
+        protected String singleTeamName;
+        protected String singleRoleName;
 
-        public MemberAssignment(TeamSortingInput input, int member, MPVariable[] memberRow) {
+        public MemberAssignment(TeamSortingInput input, int member, MPVariable[] memberRow, boolean detailedPrinting) {
             this.member = member;
             m = input.getMember(member);
             teamAssignments = new double[memberRow.length];
@@ -266,12 +325,31 @@ public class TeamSorterSolver {
             assignedTeamNames = new String[numbAssignedTeams];
             assignedRoleNames = new String[numbAssignedTeams];
             int current = 0;
+            positiveTeams = 0;
             for (int i = 0; i < teamAssignments.length; i++) {
                 if (teamAssignments[i] != 0) {
                     assignedTeams[current] = i;
-                    assignedTeamNames[current] = input.getJToTeam(i) >= 0 ? input.getTeams()[input.getJToTeam(i)] : "<Any>";
+                    int teamNumber = input.getJToTeam(i);
+                    assignedTeamNames[current] = teamNumber >= 0 ? input.getTeams()[teamNumber] : "<Any>";
+                    if (teamNumber >= 0 || detailedPrinting) {
+                        positiveTeams++;
+                    }
                     assignedRoleNames[current] = input.getJToRole(i) >= 0 ? input.getRoles()[input.getJToRole(i)] : "<Any>";
                     current++;
+                }
+            }
+            if (!detailedPrinting) {
+                if (positiveTeams == 1) {
+                    int teamNumber = 0;
+                    for (int i = 0; i < teamAssignments.length; i++) {
+                        teamNumber = input.getJToTeam(i);
+                        if (teamNumber >= 0) {
+                            singleRoleName = input.getJToRole(i) >= 0 ? input.getRoles()[input.getJToRole(i)] : "Any";
+                            singleTeamName = input.getTeams()[teamNumber];
+                        }
+                    }
+                } else if (positiveTeams == 0) {
+
                 }
             }
         }
@@ -299,12 +377,23 @@ public class TeamSorterSolver {
         public String toPrintAssignment() {
             if (assignedTeams.length == 0) return String.format("Member (%d) %s assigned to no team", member, m.getName());
             if (assignedTeams.length == 1) return String.format("Member (%d) %s assigned to %s as %s (%d) (x=%f): Preference %d", member, m.getName(), assignedTeamNames[0], assignedRoleNames[0], assignedTeams[0], teamAssignments[assignedTeams[0]], m.getPreference(assignedTeamNames[0]) + 1);
-            String result = String.format("Member (%d) %s assigned to teams: ", member, m.getName());
-            String[] teams = new String[assignedTeams.length];
-            for (int i = 0; i < teams.length; i++) {
-                teams[i] = String.format("%s as %s (%d) (x=%f): Preference %d", assignedTeamNames[i], assignedRoleNames[i], assignedTeams[i], teamAssignments[assignedTeams[i]], m.getPreference(assignedTeamNames[i]));
+            String result = String.format("Member (%d) %s assigned to ", member, m.getName());
+            if (positiveTeams == 0 || positiveTeams == 1) {
+                String[] teamAssignments = new String[assignedTeams.length];
+                for (int i = 0; i < teamAssignments.length; i++) {
+                    teamAssignments[i] = String.format("(%d, x=%f, P%d)", assignedTeams[i], this.teamAssignments[assignedTeams[i]], m.getPreference(assignedTeamNames[i]) + 1);
+                }
+                result += String.format("%s as %s %s",
+                        positiveTeams == 0 ? "Any" : singleTeamName,
+                        positiveTeams == 0 ? "Any" : singleRoleName,
+                        Arrays.toString(teamAssignments));
+            } else {
+                String[] teams = new String[assignedTeams.length];
+                for (int i = 0; i < teams.length; i++) {
+                    teams[i] = String.format("%s as %s (%d) (x=%f): Preference %d", assignedTeamNames[i], assignedRoleNames[i], assignedTeams[i], teamAssignments[assignedTeams[i]], m.getPreference(assignedTeamNames[i]) + 1);
+                }
+                result += "teams: " + Arrays.toString(teams);
             }
-            result += Arrays.toString(teams);
             return result;
         }
     }

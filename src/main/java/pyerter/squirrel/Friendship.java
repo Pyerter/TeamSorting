@@ -27,15 +27,24 @@ public class Friendship {
         return getMembers(null);
     }
 
+    public int size() {
+        return members.length;
+    }
+
     public Member[] getMembers(TeamSortingInput input) {
         if (members == null) {
             if (input == null) return null;
-            List<Member> memberList = input.getMembers();
-            this.members = memberList.stream()
-                    .filter(m -> Arrays.binarySearch(this.friends, m.getName()) >= 0)
-                    .toArray(Member[]::new);
+            initialize(input);
         }
         return members;
+    }
+
+    public void initialize(TeamSortingInput input) {
+        if (this.members != null) return;
+        List<Member> memberList = input.getMembers();
+        this.members = memberList.stream()
+                .filter(m -> Arrays.binarySearch(this.friends, m.getName()) >= 0)
+                .toArray(Member[]::new);
     }
 
     public boolean equals(Friendship friendship) {

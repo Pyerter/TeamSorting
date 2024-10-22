@@ -13,6 +13,7 @@ public class TeamSortingInput {
     protected List<Member> members;
     protected Map<String, Integer> teamMap;
     protected Map<String, Integer> roleMap;
+    protected Map<String, Integer> memberMap;
     protected String[] teams;
     protected String[] roles;
     protected String[] memberNames;
@@ -26,6 +27,8 @@ public class TeamSortingInput {
     protected int[][] colsOfRole;
     protected int numbPreferences;
     protected Map<String, Friendship> nameToFriends;
+    protected int friendCount;
+    protected Friendship[] friendships;
 
     public TeamSortingInput(List<Member> members, String[] teams, String[] roles, int numbPreferences, int[][] teamRoleRequirements, int[] minimumMemberCounts) {
         this(members, teams, roles, numbPreferences, teamRoleRequirements, minimumMemberCounts, new Friendship[0]);
@@ -33,6 +36,10 @@ public class TeamSortingInput {
 
     public TeamSortingInput(List<Member> members, String[] teams, String[] roles, int numbPreferences, int[][] teamRoleRequirements, int[] minimumMemberCounts, Friendship[] friendships) {
         this.members = members;
+        this.memberMap = new HashMap<>();
+        for (int i = 0; i < members.size(); i++) {
+            this.memberMap.put(members.get(i).getName(), i);
+        }
         this.teamMap = new HashMap<>();
         for (int i = 0; i < teams.length; i++) {
             teamMap.put(teams[i], i);
@@ -103,8 +110,8 @@ public class TeamSortingInput {
             Friendship current = friendships[i];
             String[] friends = current.getFriends();
             for (int j = 0; j < friends.length; j++) {
-                Friendship mapped = nameToFriends.getOrDefault(friends[j], current);
-                if (!mapped.equals(current)) {
+                Friendship mapped = nameToFriends.putIfAbsent(friends[j], current);
+                if (mapped != null && !mapped.equals(current)) {
                     Friendship merged = Friendship.merge(mapped, current, String.format("M<%s,%s>", mapped.getFriendshipName(), current.getFriendshipName()));
                     for (int f = 0; f < merged.getFriends().length; f++) {
                         nameToFriends.put(merged.getFriends()[f], merged);
@@ -112,6 +119,19 @@ public class TeamSortingInput {
                     current = merged;
                 }
             }
+        }
+
+        friendCount = nameToFriends.values().size();
+        nameToFriends.values().forEach(f -> f.initialize(this));
+        this.friendships = nameToFriends.values().toArray(Friendship[]::new);
+        // System.out.printf("Number friendships: %d%n", friendships.length);
+        if (friendships.length > 0) {
+            System.out.printf("Friendships: %s%n", Arrays.toString(Arrays.stream(this.friendships)
+                    .map(f ->
+                            Arrays.toString(Arrays.stream(f.getMembers())
+                                    .map(m -> m.getName()).toArray(String[]::new)))
+                    .distinct()
+                    .toArray(String[]::new)));
         }
     }
 
@@ -139,12 +159,28 @@ public class TeamSortingInput {
         return members.size();
     }
 
+    public int numbFriendships() {
+        return friendCount;
+    }
+
     public List<Member> getMembers() {
         return members;
     }
 
     public Member getMember(int i) {
         return members.get(i);
+    }
+
+    public int getMemberIndex(String name) {
+        return memberMap.get(name);
+    }
+
+    public Member getMember(String name) {
+        return members.get(memberMap.get(name));
+    }
+
+    public int getMemberIndex(Member m) {
+        return memberMap.get(m.getName());
     }
 
     public Map<String, Integer> getTeamMap() {
@@ -183,6 +219,10 @@ public class TeamSortingInput {
 
     public Map<String, Friendship> getNameToFriends() {
         return nameToFriends;
+    }
+
+    public Friendship[] getFriendships() {
+        return this.friendships;
     }
 
     public int[] getColsOfTeamRole(int t, int r) {
