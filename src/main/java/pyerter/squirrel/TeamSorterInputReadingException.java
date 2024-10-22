@@ -1,5 +1,11 @@
 package pyerter.squirrel;
 
+/**
+ * Author: Porter Squires
+ * License: MIT License
+ *
+ *
+ */
 public class TeamSorterInputReadingException extends Exception {
 
     protected Exception child;

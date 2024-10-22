@@ -9,6 +9,12 @@ import com.google.ortools.linearsolver.MPVariable;
 
 import java.util.Arrays;
 
+/**
+ * Author: Porter Squires
+ * License: MIT License
+ *
+ *
+ */
 public class TeamSorterSolver {
 
     public static final double INFINITY = Double.POSITIVE_INFINITY;

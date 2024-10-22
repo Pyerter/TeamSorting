@@ -2,6 +2,12 @@ package pyerter.squirrel;
 
 import java.util.*;
 
+/**
+ * Author: Porter Squires
+ * License: MIT License
+ *
+ *
+ */
 public class TeamSortingInput {
 
     protected List<Member> members;
@@ -19,8 +25,13 @@ public class TeamSortingInput {
     protected int[][] colsOfTeam;
     protected int[][] colsOfRole;
     protected int numbPreferences;
+    protected Map<String, Friendship> nameToFriends;
 
     public TeamSortingInput(List<Member> members, String[] teams, String[] roles, int numbPreferences, int[][] teamRoleRequirements, int[] minimumMemberCounts) {
+        this(members, teams, roles, numbPreferences, teamRoleRequirements, minimumMemberCounts, new Friendship[0]);
+    }
+
+    public TeamSortingInput(List<Member> members, String[] teams, String[] roles, int numbPreferences, int[][] teamRoleRequirements, int[] minimumMemberCounts, Friendship[] friendships) {
         this.members = members;
         this.teamMap = new HashMap<>();
         for (int i = 0; i < teams.length; i++) {
@@ -85,6 +96,23 @@ public class TeamSortingInput {
         }
         this.numbExplicitTeamRoles = colIndex;
         this.numbPreferences = numbPreferences;
+
+        // create friendship groups
+        nameToFriends = new HashMap<>();
+        for (int i = 0; i < friendships.length; i++) {
+            Friendship current = friendships[i];
+            String[] friends = current.getFriends();
+            for (int j = 0; j < friends.length; j++) {
+                Friendship mapped = nameToFriends.getOrDefault(friends[j], current);
+                if (!mapped.equals(current)) {
+                    Friendship merged = Friendship.merge(mapped, current, String.format("M<%s,%s>", mapped.getFriendshipName(), current.getFriendshipName()));
+                    for (int f = 0; f < merged.getFriends().length; f++) {
+                        nameToFriends.put(merged.getFriends()[f], merged);
+                    }
+                    current = merged;
+                }
+            }
+        }
     }
 
     public int numbMembers() {
@@ -151,6 +179,10 @@ public class TeamSortingInput {
 
     public int[] getColsOfRole(int r) {
         return colsOfRole[r];
+    }
+
+    public Map<String, Friendship> getNameToFriends() {
+        return nameToFriends;
     }
 
     public int[] getColsOfTeamRole(int t, int r) {

@@ -7,6 +7,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Author: Porter Squires
+ * License: MIT License
+ *
+ *
+ */
 public class CsvReader {
 
     public static void main(String[] args) {
@@ -20,14 +26,12 @@ public class CsvReader {
 
         try {
             TeamSortingInput sortingInput = readProblemInputCsv(filePath);
-            if (sortingInput != null) {
-                System.out.println("Members (M): " + sortingInput.toPrintMemberNames());
-                System.out.println("Teams (T): " + sortingInput.toPrintTeams());
-                System.out.println("Roles (R): " + sortingInput.toPrintRoles());
-                System.out.println("Preferences (pm): " + sortingInput.toPrintMemberPreferences());
-                System.out.println("Member Roles (rm): " + sortingInput.toPrintMemberRoles());
-                System.out.println("Team role requirements (rt): " + sortingInput.toPrintTeamRoleRequirements());
-            }
+            System.out.println("Members (M): " + sortingInput.toPrintMemberNames());
+            System.out.println("Teams (T): " + sortingInput.toPrintTeams());
+            System.out.println("Roles (R): " + sortingInput.toPrintRoles());
+            System.out.println("Preferences (pm): " + sortingInput.toPrintMemberPreferences());
+            System.out.println("Member Roles (rm): " + sortingInput.toPrintMemberRoles());
+            System.out.println("Team role requirements (rt): " + sortingInput.toPrintTeamRoleRequirements());
         } catch (TeamSorterInputReadingException e) {
             System.out.println("Exception while reading csv file: " + e.getMessage());
             if (e.hasChildException()) {
@@ -44,10 +48,12 @@ public class CsvReader {
         int roleCount;
         int prefCount;
         int memberCount;
+        int friendshipCount;
         String[] roles;
         String[] teams;
         int[] minimumMemberCounts;
         List<Member> members;
+        Friendship[] friendships;
 
         try (CSVReader reader = new CSVReader(new FileReader(filePath))) {
             String[] nextLine;
@@ -59,9 +65,15 @@ public class CsvReader {
             roleCount = Integer.parseInt(nextLine[1]);
             prefCount = Integer.parseInt(nextLine[2]);
             memberCount = Integer.parseInt(nextLine[3]);
+            try {
+                friendshipCount = Integer.parseInt(nextLine[4]);
+            } catch (Exception e) {
+                friendshipCount = 0;
+            }
             roles = new String[roleCount];
             teams = new String[teamCount];
             members = new ArrayList<>(memberCount);
+            friendships = new Friendship[friendshipCount];
             minimumMemberCounts = new int[teamCount];
 
             // Read names of roles in row 4
@@ -86,9 +98,9 @@ public class CsvReader {
 
             // Read rows containing the members
             reader.readNext(); // 5 + |T|
-            reader.readNext(); // 6 + |T| this is a label row for the columns
+            reader.readNext(); // 6 + |T| header row for member section
             for (int i = 0; i < memberCount; i++) {
-                nextLine = reader.readNext(); // 6 + |T| + i
+                nextLine = reader.readNext(); // 6 + |T| + i + 1
                 //System.out.println("Reading member: " + Arrays.toString(nextLine));
 
                 String[] memberPrefs = new String[prefCount];
@@ -113,7 +125,32 @@ public class CsvReader {
             }
             // previous line: 6 + |T| + |M|
 
-            TeamSortingInput sortingInput = new TeamSortingInput(members, teams, roles, prefCount, roleRequirements, minimumMemberCounts);
+            if (friendshipCount > 0) {
+                try {
+                    nextLine = reader.readNext(); // 7 + |T| + |M|
+                    nextLine = reader.readNext(); // 8 + |T| + |M|: Header row for friendship section
+                    for (int i = 0; i < friendshipCount; i++) {
+                        nextLine = reader.readNext();
+                        String friendshipName = nextLine[0];
+                        int j = 1;
+                        while (j < nextLine.length && !nextLine[j].isEmpty()) {
+                            j++;
+                        }
+                        String[] friends = new String[j - 1];
+                        j = 0;
+                        while (j < friends.length) {
+                            friends[j] = nextLine[j + 1];
+                        }
+                        friendships[i] = new Friendship(friendshipName, friends);
+                    }
+                } catch (Exception e) {
+                    System.out.printf("Err - could not read %d friendship groups from csv, continuing without friendships.%n", friendshipCount);
+                    friendships = new Friendship[0];
+                    friendshipCount = 0;
+                }
+            }
+
+            TeamSortingInput sortingInput = new TeamSortingInput(members, teams, roles, prefCount, roleRequirements, minimumMemberCounts, friendships);
             return sortingInput;
         } catch (IOException e) {
             throw new TeamSorterInputReadingException("IOException: " + e.getMessage(), e);

@@ -2,6 +2,12 @@ package pyerter.squirrel;
 
 import java.util.Map;
 
+/**
+ * Author: Porter Squires
+ * License: MIT License
+ *
+ *
+ */
 public class Member {
 
     protected String name;
