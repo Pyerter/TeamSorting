@@ -3,6 +3,12 @@ package pyerter.squirrel;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Author: Porter Squires
+ * License: MIT License
+ *
+ * 
+ */
 public class Friendship {
 
     protected String friendshipName;
