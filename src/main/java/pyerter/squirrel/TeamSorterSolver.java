@@ -349,7 +349,8 @@ public class TeamSorterSolver {
                         }
                     }
                 } else if (positiveTeams == 0) {
-
+                    singleRoleName = "<Any>";
+                    singleTeamName = "<Any>";
                 }
             }
         }
@@ -383,9 +384,7 @@ public class TeamSorterSolver {
                 for (int i = 0; i < teamAssignments.length; i++) {
                     teamAssignments[i] = String.format("(%d, x=%f, P%d)", assignedTeams[i], this.teamAssignments[assignedTeams[i]], m.getPreference(assignedTeamNames[i]) + 1);
                 }
-                result += String.format("%s as %s %s",
-                        positiveTeams == 0 ? "Any" : singleTeamName,
-                        positiveTeams == 0 ? "Any" : singleRoleName,
+                result += String.format("%s as %s %s", singleTeamName, singleRoleName,
                         Arrays.toString(teamAssignments));
             } else {
                 String[] teams = new String[assignedTeams.length];
