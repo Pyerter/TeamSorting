@@ -13,9 +13,21 @@ public class Main {
             return;
         }
         try {
+            TeamSortingLogger logger = new TeamSortingLogger(2);
             TeamSortingInput input = CsvReader.readProblemInputCsv(args[0]);
-            TeamSorterSolver solver = new TeamSorterSolver(input);
-            solver.solve();
+            boolean useIntegral = input.numbFriendships() > 0;
+            TeamSorterSolver solver = new TeamSorterSolver(input, useIntegral);
+            TeamSorterResult result = solver.solve(logger);
+            logger.log(result.toPrintAssignments(), 3);
+            if (useIntegral) {
+                TeamSorterSolver fractionalSolver = new TeamSorterSolver(input, false);
+                TeamSorterResult fractResult = fractionalSolver.solve(logger);
+                logger.log("Fractional " + fractResult.toPrintStats());
+                logger.log(fractResult.toPrintFinalPreferences());
+            }
+            logger.log("Result " + result.toPrintStats());
+            logger.log(result.toPrintFinalPreferences());
+            logger.log(result.toPrintFinalAssignments(), 1);
         } catch (TeamSorterInputReadingException e) {
             System.out.println(e.getMessage());
             if (args.length > 1 && args[1].equalsIgnoreCase("--debug=true")) {

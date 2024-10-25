@@ -6,6 +6,8 @@ Partitioning Approximation Algorithms".
 The TPP program relies on Google's OR Tools. Here is the link to the 
 [OR-Tools API (Java)](https://or-tools.github.io/docs/javadoc/index.html).
 
+To see the list of solver types, consult [this link](https://or-tools.github.io/docs/javadoc/com/google/ortools/linearsolver/MPSolver.html#createSolver-java.lang.String-).
+
 ## Running the Code
 To run the code, you will need a properly formatted CSV file as input. In 
 the `app` folder, you can find the relevant jar files and an accompanying 

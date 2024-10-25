@@ -23,29 +23,45 @@ public class TeamSorterSolver {
     protected TeamSortingInput input;
 
     protected boolean detailedPrinting = false;
+    protected boolean useIntegralVariables = false;
+    protected boolean useFriendships = true;
 
     public TeamSorterSolver(TeamSortingInput input) {
+        this(input, false);
+    }
+
+    public TeamSorterSolver(TeamSortingInput input, boolean useIntegralVariables) {
         this.input = input;
+        this.useIntegralVariables = useIntegralVariables;
     }
 
     public TeamSortingInput getInput() {
         return input;
     }
 
+    public boolean isUseFriendships() {
+        return useFriendships;
+    }
+
+    public void setUseFriendships(boolean useFriendships) {
+        this.useFriendships = useFriendships;
+    }
+
     public void setInput(TeamSortingInput input) {
         this.input = input;
     }
 
-    public void solve() {
+    public TeamSorterResult solve(TeamSortingLogger logger) {
         Loader.loadNativeLibraries();
 
-        System.out.println("Google OR-Tools version: " + OrToolsVersion.getVersionString());
+        logger.log("Google OR-Tools version: " + OrToolsVersion.getVersionString());
 
         // Create the linear solver with the GLOP backend.
-        MPSolver solver = MPSolver.createSolver("GLOP");
+        String solverID = useIntegralVariables ? "SCIP" : "GLOP";
+        MPSolver solver = MPSolver.createSolver(solverID);
         if (solver == null) {
-            System.out.println("Could not create solver GLOP");
-            return;
+            logger.log(String.format("Could not create solver %s", solverID));
+            return null;
         }
 
         // Create the variable matrix
@@ -65,11 +81,12 @@ public class TeamSorterSolver {
         constraintCounts[4] = 0;
         for (int i = 0; i < constraint5.length; i++)
             constraintCounts[4] += constraint5[i].length;
-        System.out.printf("Created %d constraints for column sums.%n", constraintCounts[0]);
-        System.out.printf("Created %d constraints for row sums.%n", constraintCounts[1]);
-        System.out.printf("Created %d constraints for member role assignments.%n", constraintCounts[2]);
-        System.out.printf("Created %d constraints for team size requirements.%n", constraintCounts[3]);
-        System.out.printf("Created %d constraints for friendship requirements.%n", constraintCounts[4]);
+        logger.log(String.format("%dx%d Matrix: %d variables", input.numbRows(), input.numbAugmentedColumns(), input.numbRows() * input.numbAugmentedColumns()));
+        logger.log(String.format("Created %d constraints for column sums.", constraintCounts[0]));
+        logger.log(String.format("Created %d constraints for row sums.", constraintCounts[1]));
+        logger.log(String.format("Created %d constraints for member role assignments.", constraintCounts[2]));
+        logger.log(String.format("Created %d constraints for team size requirements.", constraintCounts[3]));
+        logger.log(String.format("Created %d constraints for friendship requirements.", constraintCounts[4]));
 
         // Create the objective function
         int[] preferenceMultipliers = new int[input.getNumbPreferences()];
@@ -80,40 +97,24 @@ public class TeamSorterSolver {
         MPObjective objective = createObjectiveFunction(solver, vars, preferenceMultipliers);
         objective.setMaximization(); // we maximize it
 
-        System.out.println("Solving with " + solver.solverVersion());
+        logger.log("Solving with " + solver.solverVersion());
         final MPSolver.ResultStatus resultStatus = solver.solve();
 
-        System.out.println("Status: " + resultStatus);
-        if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
-            System.out.println("The problem does not have an optimal solution!");
-            if (resultStatus == MPSolver.ResultStatus.FEASIBLE) {
-                System.out.println("A potentially suboptimal solution was found");
-            } else {
-                System.out.println("The solver could not solve the problem.");
-                return;
-            }
-        }
+        TeamSorterResult result = new TeamSorterResult(solver, objective, vars, input, resultStatus, preferenceMultipliers);
 
-        System.out.println("Solution:");
-        System.out.println("Objective value = " + objective.value());
-
-        MemberAssignment[] memberAssignments = new MemberAssignment[input.numbRows()];
-        for (int i = 0; i < memberAssignments.length; i++) {
-            memberAssignments[i] = new MemberAssignment(input, i, vars[i], detailedPrinting);
-            System.out.println(memberAssignments[i].toPrintAssignment());
-        }
-
-        System.out.println("Advanced usage:");
-        System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
-        System.out.println("Problem solved in " + solver.iterations() + " iterations");
+        return result;
     }
 
     protected MPVariable[][] createVariables(MPSolver solver) {
         int rows = input.numbMembers();
         int cols = input.numbAugmentedColumns();
         MPVariable[][] vars = new MPVariable[rows][];
+        if (useIntegralVariables) System.out.printf("Using integral variables");
         for (int row = 0; row < rows; row++) {
-            vars[row] = solver.makeNumVarArray(cols, 0, 1);
+            if (!useIntegralVariables)
+                vars[row] = solver.makeNumVarArray(cols, 0, 1);
+            else
+                vars[row] = solver.makeIntVarArray(cols, 0, 1);
         }
         return vars;
     }
@@ -152,17 +153,15 @@ public class TeamSorterSolver {
             constraints[m] = constraint;
             // System.out.printf("Preferred teams for member %d: %s%n", m, Arrays.toString(input.getMember(m).getPreferredTeams()));
             int[] memberPrefs = input.getMemberPreferences(m);
+            Arrays.sort(memberPrefs);
             forEach(getRows(vars, m), (v, i, j) -> {
                 int t = input.getJToTeam(j);
                 if (t < 0) {
                     constraint.setCoefficient(v, 1);
                     return;
                 }
-                for (int team = 0; team < memberPrefs.length; team++) {
-                    if (memberPrefs[team] == t) {
-                        constraint.setCoefficient(v, 1);
-                        break;
-                    }
+                if (Arrays.binarySearch(memberPrefs, t) >= 0) {
+                    constraint.setCoefficient(v, 1);
                 }
             });
         }
@@ -175,17 +174,11 @@ public class TeamSorterSolver {
             MPConstraint constraint = solver.makeConstraint(NEGATIVE_INFINITY, 0, String.format("membercapableroles%d", m));
             constraints[m] = constraint;
             int[] memberRoles = input.getMemberRoles(m);
+            Arrays.sort(memberRoles);
             forEach(getRows(vars, m), (v, i, j) -> {
                 int role = input.getJToRole(j);
                 if (role == -1) return;
-                boolean contained = false;
-                for (int r = 0; r < memberRoles.length; r++) {
-                    if (memberRoles[r] == role) {
-                        contained = true;
-                        break;
-                    }
-                }
-                if (!contained) {
+                if (Arrays.binarySearch(memberRoles, role) < 0) {
                     constraint.setCoefficient(v, 1);
                 }
             });
@@ -297,104 +290,6 @@ public class TeamSorterSolver {
 
     public interface MatrixVariableConsumer {
         public void consume(MPVariable var, int i, int j);
-    }
-
-    public static class MemberAssignment {
-        protected int member;
-        protected Member m;
-        protected double[] teamAssignments;
-        protected int[] assignedTeams;
-        protected String[] assignedTeamNames;
-        protected String[] assignedRoleNames;
-        protected int positiveTeams;
-        protected String singleTeamName;
-        protected String singleRoleName;
-
-        public MemberAssignment(TeamSortingInput input, int member, MPVariable[] memberRow, boolean detailedPrinting) {
-            this.member = member;
-            m = input.getMember(member);
-            teamAssignments = new double[memberRow.length];
-            int numbAssignedTeams = 0;
-            for (int i = 0; i < memberRow.length; i++) {
-                teamAssignments[i] = memberRow[i].solutionValue();
-                if (teamAssignments[i] != 0) {
-                    numbAssignedTeams++;
-                }
-            }
-            assignedTeams = new int[numbAssignedTeams];
-            assignedTeamNames = new String[numbAssignedTeams];
-            assignedRoleNames = new String[numbAssignedTeams];
-            int current = 0;
-            positiveTeams = 0;
-            for (int i = 0; i < teamAssignments.length; i++) {
-                if (teamAssignments[i] != 0) {
-                    assignedTeams[current] = i;
-                    int teamNumber = input.getJToTeam(i);
-                    assignedTeamNames[current] = teamNumber >= 0 ? input.getTeams()[teamNumber] : "<Any>";
-                    if (teamNumber >= 0 || detailedPrinting) {
-                        positiveTeams++;
-                    }
-                    assignedRoleNames[current] = input.getJToRole(i) >= 0 ? input.getRoles()[input.getJToRole(i)] : "<Any>";
-                    current++;
-                }
-            }
-            if (!detailedPrinting) {
-                if (positiveTeams == 1) {
-                    int teamNumber = 0;
-                    for (int i = 0; i < teamAssignments.length; i++) {
-                        teamNumber = input.getJToTeam(i);
-                        if (teamNumber >= 0) {
-                            singleRoleName = input.getJToRole(i) >= 0 ? input.getRoles()[input.getJToRole(i)] : "Any";
-                            singleTeamName = input.getTeams()[teamNumber];
-                        }
-                    }
-                } else if (positiveTeams == 0) {
-                    singleRoleName = "<Any>";
-                    singleTeamName = "<Any>";
-                }
-            }
-        }
-
-        public int getMemberIndex() {
-            return member;
-        }
-
-        public double[] getValues() {
-            return teamAssignments;
-        }
-
-        public double getValue(int col) {
-            return teamAssignments[col];
-        }
-
-        public int[] getAssignedTeams() {
-            return assignedTeams;
-        }
-
-        public Member getMember() {
-            return m;
-        }
-
-        public String toPrintAssignment() {
-            if (assignedTeams.length == 0) return String.format("Member (%d) %s assigned to no team", member, m.getName());
-            if (assignedTeams.length == 1) return String.format("Member (%d) %s assigned to %s as %s (%d) (x=%f): Preference %d", member, m.getName(), assignedTeamNames[0], assignedRoleNames[0], assignedTeams[0], teamAssignments[assignedTeams[0]], m.getPreference(assignedTeamNames[0]) + 1);
-            String result = String.format("Member (%d) %s assigned to ", member, m.getName());
-            if (positiveTeams == 0 || positiveTeams == 1) {
-                String[] teamAssignments = new String[assignedTeams.length];
-                for (int i = 0; i < teamAssignments.length; i++) {
-                    teamAssignments[i] = String.format("(%d, x=%f, P%d)", assignedTeams[i], this.teamAssignments[assignedTeams[i]], m.getPreference(assignedTeamNames[i]) + 1);
-                }
-                result += String.format("%s as %s %s", singleTeamName, singleRoleName,
-                        Arrays.toString(teamAssignments));
-            } else {
-                String[] teams = new String[assignedTeams.length];
-                for (int i = 0; i < teams.length; i++) {
-                    teams[i] = String.format("%s as %s (%d) (x=%f): Preference %d", assignedTeamNames[i], assignedRoleNames[i], assignedTeams[i], teamAssignments[assignedTeams[i]], m.getPreference(assignedTeamNames[i]) + 1);
-                }
-                result += "teams: " + Arrays.toString(teams);
-            }
-            return result;
-        }
     }
 
 }
