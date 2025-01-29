@@ -1,4 +1,7 @@
-package pyerter.squirrel;
+package pyerter.squirrel.tpp.friendship;
+
+import pyerter.squirrel.tpp.core.Member;
+import pyerter.squirrel.tpp.core.TeamSortingInput;
 
 import java.util.Arrays;
 import java.util.List;

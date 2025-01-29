@@ -1,4 +1,4 @@
-package pyerter.squirrel;
+package pyerter.squirrel.tpp.core;
 
 import java.util.Map;
 

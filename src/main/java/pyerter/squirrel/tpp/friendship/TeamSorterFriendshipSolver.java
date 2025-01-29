@@ -1,11 +1,12 @@
-package pyerter.squirrel;
+package pyerter.squirrel.tpp.friendship;
 
-import com.google.ortools.Loader;
-import com.google.ortools.init.OrToolsVersion;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+import pyerter.squirrel.tpp.core.Member;
+import pyerter.squirrel.tpp.core.TeamSorterSolver;
+import pyerter.squirrel.tpp.core.TeamSortingInput;
 
 import java.util.Arrays;
 
@@ -15,99 +16,19 @@ import java.util.Arrays;
  *
  *
  */
-public class TeamSorterSolver {
+public class TeamSorterFriendshipSolver extends TeamSorterSolver {
 
-    public static final double INFINITY = Double.POSITIVE_INFINITY;
-    public static final double NEGATIVE_INFINITY = Double.NEGATIVE_INFINITY;
-
-    protected TeamSortingInput input;
-
-    protected boolean detailedPrinting = false;
-    protected boolean useIntegralVariables = false;
-    protected boolean useFriendships = true;
-
-    public TeamSorterSolver(TeamSortingInput input) {
+    public TeamSorterFriendshipSolver(TeamSortingInput input) {
         this(input, false);
     }
 
-    public TeamSorterSolver(TeamSortingInput input, boolean useIntegralVariables) {
-        this.input = input;
-        this.useIntegralVariables = useIntegralVariables;
-    }
-
-    public TeamSortingInput getInput() {
-        return input;
-    }
-
-    public boolean isUseFriendships() {
-        return useFriendships;
-    }
-
-    public void setUseFriendships(boolean useFriendships) {
-        this.useFriendships = useFriendships;
-    }
-
-    public void setInput(TeamSortingInput input) {
-        this.input = input;
-    }
-
-    public TeamSorterResult solve(TeamSortingLogger logger) {
-        Loader.loadNativeLibraries();
-
-        logger.log("Google OR-Tools version: " + OrToolsVersion.getVersionString());
-
-        // Create the linear solver with the GLOP backend.
-        String solverID = useIntegralVariables ? "SCIP" : "GLOP";
-        MPSolver solver = MPSolver.createSolver(solverID);
-        if (solver == null) {
-            logger.log(String.format("Could not create solver %s", solverID));
-            return null;
-        }
-
-        // Create the variable matrix
-        MPVariable[][] vars = createVariables(solver);
-
-        // Create the constraints
-        int[] constraintCounts = new int[5];
-        MPConstraint[] constraint1 = createConstraint1TeamRoleColumnSums(solver, vars);
-        MPConstraint[] constraint2 = createConstraint2MemberRowSums(solver, vars);
-        MPConstraint[] constraint3 = createConstraint3MemberRoleCapabilities(solver, vars);
-        MPConstraint[] constraint4 = createConstraint4TeamSizeRequirements(solver, vars);
-        MPConstraint[][] constraint5 = createConstraint5FriendshipRequirements(solver, vars);
-        constraintCounts[0] = constraint1.length;
-        constraintCounts[1] = constraint2.length;
-        constraintCounts[2] = constraint3.length;
-        constraintCounts[3] = constraint4.length;
-        constraintCounts[4] = 0;
-        for (int i = 0; i < constraint5.length; i++)
-            constraintCounts[4] += constraint5[i].length;
-        logger.log(String.format("%dx%d Matrix: %d variables", input.numbRows(), input.numbAugmentedColumns(), input.numbRows() * input.numbAugmentedColumns()));
-        logger.log(String.format("Created %d constraints for column sums.", constraintCounts[0]));
-        logger.log(String.format("Created %d constraints for row sums.", constraintCounts[1]));
-        logger.log(String.format("Created %d constraints for member role assignments.", constraintCounts[2]));
-        logger.log(String.format("Created %d constraints for team size requirements.", constraintCounts[3]));
-        logger.log(String.format("Created %d constraints for friendship requirements.", constraintCounts[4]));
-
-        // Create the objective function
-        int[] preferenceMultipliers = new int[input.getNumbPreferences()];
-        for (int i = 0; i < preferenceMultipliers.length; i++) {
-            int val = preferenceMultipliers.length - i;
-            preferenceMultipliers[i] = val * val;
-        }
-        MPObjective objective = createObjectiveFunction(solver, vars, preferenceMultipliers);
-        objective.setMaximization(); // we maximize it
-
-        logger.log("Solving with " + solver.solverVersion());
-        final MPSolver.ResultStatus resultStatus = solver.solve();
-
-        TeamSorterResult result = new TeamSorterResult(solver, objective, vars, input, resultStatus, preferenceMultipliers);
-
-        return result;
+    public TeamSorterFriendshipSolver(TeamSortingInput input, boolean useIntegralVariables) {
+        super(input, false);
     }
 
     protected MPVariable[][] createVariables(MPSolver solver) {
         int rows = input.numbMembers();
-        int cols = input.numbAugmentedColumns();
+        int cols = input.getO();
         MPVariable[][] vars = new MPVariable[rows][];
         if (useIntegralVariables) System.out.printf("Using integral variables");
         for (int row = 0; row < rows; row++) {
@@ -120,28 +41,40 @@ public class TeamSorterSolver {
     }
 
     protected MPConstraint[] createConstraint1TeamRoleColumnSums(MPSolver solver, MPVariable[][] vars) {
-        MPConstraint[] constraints = new MPConstraint[input.numbAugmentedColumns()];
+        MPConstraint[] constraints = new MPConstraint[input.getO()];
         int constraintIndex = 0;
+        int colIndex = 0;
         // Create constraints for all columns
         int beginExtraColumns = constraintIndex;
         while (constraintIndex < constraints.length) {
             // get team role mapping if it exists
-            int t = input.getJToTeam(constraintIndex);
-            int r = input.getJToRole(constraintIndex);
-            MPConstraint constraint;
+            int t = input.getJToTeam(colIndex);
+            int r = input.getJToRole(colIndex);
+            MPConstraint constraint = null;
             if (t >= 0) {
-                if (r < 0)
-                    constraint = solver.makeConstraint(1, 1, String.format("colsumteam%droleanydcolumn%d", t, constraintIndex));
-                else
-                    constraint = solver.makeConstraint(1, 1, String.format("colsumteam%drole%dcolumn%d", t, r, constraintIndex));
-            } else {
-                constraint = solver.makeConstraint(1, 1, String.format("colsumextra%dcolumn%d", constraintIndex - beginExtraColumns, constraintIndex));
+                if (r < 0) {
+                    int[] colsOfTeam = input.getOColsOfTeam(t);
+                    boolean contained = false;
+                    for (int i = 0; i < colsOfTeam.length; i++) {
+                        if (colsOfTeam[i] == colIndex) {
+                            contained = true;
+                            break;
+                        }
+                    }
+                    if (contained)
+                        constraint = solver.makeConstraint(1, 1, String.format("colsumteam%droleanydcolumn%d", t, colIndex));
+                } else
+                    constraint = solver.makeConstraint(1, 1, String.format("colsumteam%drole%dcolumn%d", t, r, colIndex));
             }
-            constraints[constraintIndex] = constraint;
-            forEach(getColumns(vars, constraintIndex), (v, i, j) -> {
-                constraint.setCoefficient(v, 1);
-            });
-            constraintIndex++;
+            if (constraint != null) {
+                MPConstraint constraintDup = constraint;
+                constraints[constraintIndex] = constraint;
+                forEach(getColumns(vars, colIndex), (v, i, j) -> {
+                    constraintDup.setCoefficient(v, 1);
+                });
+                constraintIndex++;
+            }
+            colIndex++;
         }
         return constraints;
     }
@@ -152,17 +85,18 @@ public class TeamSorterSolver {
             MPConstraint constraint = solver.makeConstraint(1, 1, String.format("rowsummember%drow%d", m, m));;
             constraints[m] = constraint;
             // System.out.printf("Preferred teams for member %d: %s%n", m, Arrays.toString(input.getMember(m).getPreferredTeams()));
-            int[] memberPrefs = input.getMemberPreferences(m);
-            Arrays.sort(memberPrefs);
+            // Remove need to filter only teams which a member prefers
+            //int[] memberPrefs = input.getMemberPreferences(m);
+            //Arrays.sort(memberPrefs);
             forEach(getRows(vars, m), (v, i, j) -> {
-                int t = input.getJToTeam(j);
-                if (t < 0) {
-                    constraint.setCoefficient(v, 1);
-                    return;
-                }
-                if (Arrays.binarySearch(memberPrefs, t) >= 0) {
-                    constraint.setCoefficient(v, 1);
-                }
+                //int t = input.getJToTeam(j);
+                //if (t < 0) {
+                //    constraint.setCoefficient(v, 1);
+                //    return;
+                //}
+                //if (Arrays.binarySearch(memberPrefs, t) >= 0) {
+                constraint.setCoefficient(v, 1);
+                //}
             });
         }
         return constraints;
@@ -278,14 +212,6 @@ public class TeamSorterSolver {
             slice[i] = vars[rows[i]];
         }
         return slice;
-    }
-
-    public void forEach(MPVariable[][] vars, MatrixVariableConsumer consumer) {
-        for (int i = 0; i < vars.length; i++) {
-            for (int j = 0; j < vars[i].length; j++) {
-                consumer.consume(vars[i][j], i, j);
-            }
-        }
     }
 
     public interface MatrixVariableConsumer {

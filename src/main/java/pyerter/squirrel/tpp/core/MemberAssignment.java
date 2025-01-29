@@ -1,4 +1,4 @@
-package pyerter.squirrel;
+package pyerter.squirrel.tpp.core;
 
 import com.google.ortools.linearsolver.MPVariable;
 
@@ -145,7 +145,8 @@ public class MemberAssignment {
         if (preference >= 0) {
             return preferenceMultipliers[preference];
         }
-        return -preferenceMultipliers[0];
+        return 0;
+        //return -preferenceMultipliers[0];
     }
 
     public String toPrintAssignment() {

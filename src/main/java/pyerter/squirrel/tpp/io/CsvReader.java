@@ -1,7 +1,11 @@
-package pyerter.squirrel;
+package pyerter.squirrel.tpp.io;
 
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
+import pyerter.squirrel.tpp.core.TeamSortingInput;
+import pyerter.squirrel.tpp.friendship.Friendship;
+import pyerter.squirrel.tpp.core.Member;
+import pyerter.squirrel.tpp.friendship.TeamSortingFriendshipInput;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -41,6 +45,10 @@ public class CsvReader {
     }
 
     public static TeamSortingInput readProblemInputCsv(String filePath) throws TeamSorterInputReadingException {
+        return readProblemInputCsv(filePath, false);
+    }
+
+    public static TeamSortingInput readProblemInputCsv(String filePath, boolean createFriendshipInput) throws TeamSorterInputReadingException {
         // values depending on the layout of the csv
         int countsRow = 1;
         int teamReqRowStart = 3; // >countsRow
@@ -151,7 +159,11 @@ public class CsvReader {
                 }
             }
 
-            TeamSortingInput sortingInput = new TeamSortingInput(members, teams, roles, prefCount, roleRequirements, minimumMemberCounts, friendships);
+            if (!createFriendshipInput) {
+                TeamSortingInput sortingInput = new TeamSortingInput(members, teams, roles, prefCount, roleRequirements, minimumMemberCounts, friendships);
+                return sortingInput;
+            }
+            TeamSortingInput sortingInput = new TeamSortingFriendshipInput(members, teams, roles, prefCount, roleRequirements, minimumMemberCounts, friendships);
             return sortingInput;
         } catch (IOException e) {
             throw new TeamSorterInputReadingException("IOException: " + e.getMessage(), e);

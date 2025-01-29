@@ -1,8 +1,9 @@
-package pyerter.squirrel;
+package pyerter.squirrel.tpp.core;
 
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+import pyerter.squirrel.tpp.friendship.Friendship;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +41,14 @@ public class TeamSorterResult {
         this.preferenceMultipliers = preferenceMultipliers;
     }
 
+    public boolean isValidSolution() {
+        return status == MPSolver.ResultStatus.FEASIBLE || status == MPSolver.ResultStatus.OPTIMAL;
+    }
+
     public String toPrintAssignments() {
+        if (!isValidSolution()) {
+            return "Solver could not find feasible solution.";
+        }
         String out = "";
         for (int i = 0; i < assignments.length; i++) {
             out += assignments[i].toPrintAssignment() + "\n";
@@ -49,6 +57,9 @@ public class TeamSorterResult {
     }
 
     public String toPrintFinalAssignments() {
+        if (!isValidSolution()) {
+            return "Solver could not find feasible solution.";
+        }
         getObjectiveValue();
         String out = "";
         for (int i = 0; i < assignments.length; i++) {
@@ -67,6 +78,9 @@ public class TeamSorterResult {
     }
 
     public String toPrintFinalPreferences() {
+        if (!isValidSolution()) {
+            return "Solver could not find feasible solution.";
+        }
         int[] preferences = getFinalPreferences();
         String out = "Members with preferences:\n";
         for (int i = 1; i <= input.getNumbPreferences() + 1; i++) {
@@ -74,7 +88,7 @@ public class TeamSorterResult {
             int prefNumber = index - 1;
             out += String.format("    Preference (%s%d) %d: %d%n",
                     index == 0 ? "" : "+",
-                    prefNumber == -1 ? -preferenceMultipliers[0] : preferenceMultipliers[prefNumber],
+                    prefNumber == -1 ? 0 : preferenceMultipliers[prefNumber],
                     prefNumber, preferences[index]);
         }
         return out.substring(0, out.length() - 1);
@@ -170,7 +184,7 @@ public class TeamSorterResult {
                 continue;
             } else {
                 try {
-                    assignments[i].setFinalTeamAssignment(input.getTeamMap().get(input.getMember(i).preferredTeams[0]), input);
+                    assignments[i].setFinalTeamAssignment(input.getTeamMap().get(input.getMember(i).getPreferredTeams()[0]), input);
                     obj += assignments[i].getFinalAssignmentObjectiveValue(preferenceMultipliers);
                     assigned[i] = true;
                 } catch (Exception e) {

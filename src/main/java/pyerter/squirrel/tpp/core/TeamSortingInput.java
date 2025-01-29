@@ -1,4 +1,6 @@
-package pyerter.squirrel;
+package pyerter.squirrel.tpp.core;
+
+import pyerter.squirrel.tpp.friendship.Friendship;
 
 import java.util.*;
 
@@ -53,6 +55,41 @@ public class TeamSortingInput {
         this.memberNames = calculateMemberNames();
         this.minMembersPerTeam = 5;
         this.teamRoleRequirements = teamRoleRequirements;
+        initializeColumnIndexes(minimumMemberCounts);
+        this.numbPreferences = numbPreferences;
+
+        // create friendship groups
+        nameToFriends = new HashMap<>();
+        for (int i = 0; i < friendships.length; i++) {
+            Friendship current = friendships[i];
+            String[] friends = current.getFriends();
+            for (int j = 0; j < friends.length; j++) {
+                Friendship mapped = nameToFriends.putIfAbsent(friends[j], current);
+                if (mapped != null && !mapped.equals(current)) {
+                    Friendship merged = Friendship.merge(mapped, current, String.format("M<%s,%s>", mapped.getFriendshipName(), current.getFriendshipName()));
+                    for (int f = 0; f < merged.getFriends().length; f++) {
+                        nameToFriends.put(merged.getFriends()[f], merged);
+                    }
+                    current = merged;
+                }
+            }
+        }
+
+        friendCount = nameToFriends.values().size();
+        nameToFriends.values().forEach(f -> f.initialize(this));
+        this.friendships = nameToFriends.values().toArray(Friendship[]::new);
+        // System.out.printf("Number friendships: %d%n", friendships.length);
+        if (friendships.length > 0) {
+            System.out.printf("Friendships: %s%n", Arrays.toString(Arrays.stream(this.friendships)
+                    .map(f ->
+                            Arrays.toString(Arrays.stream(f.getMembers())
+                                    .map(m -> m.getName()).toArray(String[]::new)))
+                    .distinct()
+                    .toArray(String[]::new)));
+        }
+    }
+
+    protected void initializeColumnIndexes(int[] minimumMemberCounts) {
         colsOfRole = new int[roles.length][];
         colsOfTeam = new int[teams.length][];
         int[] numbColsOfRole = new int[numbRoles()];
@@ -102,37 +139,111 @@ public class TeamSortingInput {
             }
         }
         this.numbExplicitTeamRoles = colIndex;
-        this.numbPreferences = numbPreferences;
+    }
 
-        // create friendship groups
-        nameToFriends = new HashMap<>();
-        for (int i = 0; i < friendships.length; i++) {
-            Friendship current = friendships[i];
-            String[] friends = current.getFriends();
-            for (int j = 0; j < friends.length; j++) {
-                Friendship mapped = nameToFriends.putIfAbsent(friends[j], current);
-                if (mapped != null && !mapped.equals(current)) {
-                    Friendship merged = Friendship.merge(mapped, current, String.format("M<%s,%s>", mapped.getFriendshipName(), current.getFriendshipName()));
-                    for (int f = 0; f < merged.getFriends().length; f++) {
-                        nameToFriends.put(merged.getFriends()[f], merged);
-                    }
-                    current = merged;
-                }
+    public static TeamSortingInput generateInput(int memberCount, int teamCount, int roleCount, int preferenceCount, int roleReqLB, int roleReqUB, int minCountLB, int minCountUB, int memberRoleLB, int memberRoleUB) {
+        if (minCountUB * teamCount > memberCount) {
+            System.out.println("Cannot randomize input where minimum member count per team upper bound would cause infeasible solutions.");
+            System.out.printf("minCountUB (%d) * teamCount (%d) > memberCount (%d)", minCountUB, teamCount, memberCount);
+            return null;
+        }
+        if (minCountLB > minCountUB) {
+            System.out.println("Minimum Count Lower Bound must be less than Minimum Count Upper Bound");
+            return null;
+        }
+        if (roleReqLB > roleReqUB) {
+            System.out.println("Role Requirement Lower Bound must be less than Role Requirement Upper Bound");
+            return null;
+        }
+        if (memberRoleLB > memberRoleUB) {
+            System.out.println("Member Role Lower Bound must be less than Member Role Upper Bound");
+            return null;
+        }
+        if (memberRoleUB > roleCount) {
+            System.out.println("Cannot randomize input where member role upper bound is greater than the total number of roles.");
+            return null;
+        }
+        List<Member> members = new ArrayList<>(memberCount);
+        String[] teams = new String[teamCount];
+        for (int i = 0; i < teams.length; i++) {
+            teams[i] = "t" + (i + 1);
+        }
+        String[] roles = new String[roleCount];
+        for (int i = 0; i < roles.length; i++) {
+            roles[i] = "r" + (i + 1);
+        }
+        int[][] teamRoleRequirements = new int[teamCount][roleCount];
+        int randRange = roleReqUB - roleReqLB;
+        for (int t = 0; t < teamCount; t++) {
+            for (int r = 0; r < roleCount; r++) {
+                teamRoleRequirements[t][r] = (int)(Math.random() * randRange + roleReqLB);
             }
         }
-
-        friendCount = nameToFriends.values().size();
-        nameToFriends.values().forEach(f -> f.initialize(this));
-        this.friendships = nameToFriends.values().toArray(Friendship[]::new);
-        // System.out.printf("Number friendships: %d%n", friendships.length);
-        if (friendships.length > 0) {
-            System.out.printf("Friendships: %s%n", Arrays.toString(Arrays.stream(this.friendships)
-                    .map(f ->
-                            Arrays.toString(Arrays.stream(f.getMembers())
-                                    .map(m -> m.getName()).toArray(String[]::new)))
-                    .distinct()
-                    .toArray(String[]::new)));
+        int[] minMemberCount = new int[teamCount];
+        randRange = minCountUB - minCountLB;
+        for (int t = 0; t < teamCount; t++) {
+            int totalRoleRequirement = Arrays.stream(teamRoleRequirements[t]).reduce(0, Integer::sum);
+            minMemberCount[t] = Math.max(totalRoleRequirement, (int)(Math.random() * randRange + minCountLB));
         }
+
+        int o = 0; // total team-specific assignments needed
+        int t = 0; // current team
+        int r = 0; // current role
+        int c = 0; // current count of team assignments for team t
+        randRange = memberRoleUB - memberRoleLB;
+        for (int m = 0; m < memberCount; m++) {
+            int numbRoles = (int)(Math.random() * randRange + memberRoleLB);
+            String[] mRoles;
+            String[] mPrefs;
+            if (numbRoles > 0) {
+                List<String> list = new ArrayList<String>(List.of(roles));
+                Collections.shuffle(list);
+                mRoles = list.subList(0, numbRoles).toArray(String[]::new);
+            } else {
+                mRoles = new String[0];
+            }
+            List<String> list = new ArrayList<>(List.of(teams));
+            Collections.shuffle(list);
+            mPrefs = list.subList(0, preferenceCount).toArray(String[]::new);
+            if (t < teamCount && teamRoleRequirements[t][r] > c) {
+                if (numbRoles > 0) {
+                    boolean contained = false;
+                    for (int i = 0; i < mRoles.length; i++) {
+                        if (mRoles[i].equalsIgnoreCase(roles[r])) {
+                            contained = true;
+                            break;
+                        }
+                    }
+                    if (!contained)
+                        mRoles[(int)(Math.random() * numbRoles)] = roles[r];
+                } else {
+                    numbRoles = 1;
+                    mRoles = new String[]{ roles[r] };
+                }
+                boolean contained = false;
+                for (int i = 0; i < mPrefs.length; i++) {
+                    if (mPrefs[i].equalsIgnoreCase(teams[t])) {
+                        contained = true;
+                        break;
+                    }
+                }
+                if (!contained && preferenceCount > 0)
+                    mPrefs[(int)(Math.random() * preferenceCount)] = teams[t];
+                c++;
+
+                if (teamRoleRequirements[t][r] <= c) {
+                    c = 0;
+                    r++;
+                    if (r > roleCount) {
+                        r = 0;
+                        t++;
+                    }
+                }
+            }
+            Member member = new Member("m" + m, mRoles, mPrefs);
+            members.add(member);
+        }
+        return new TeamSortingInput(members, teams, roles, preferenceCount, teamRoleRequirements, minMemberCount);
     }
 
     public int numbMembers() {
@@ -151,12 +262,20 @@ public class TeamSortingInput {
         return numbExplicitTeamRoles;
     }
 
+    public int getO() {
+        return numbExplicitTeamRoles;
+    }
+
     public int numbAugmentedColumns() {
         return members.size();
     }
 
     public int numbRows() {
         return members.size();
+    }
+
+    public int numbCols() {
+        return numbRows();
     }
 
     public int numbFriendships() {
@@ -213,6 +332,10 @@ public class TeamSortingInput {
         return colsOfTeam[t];
     }
 
+    public int[] getOColsOfTeam(int t) {
+        return colsOfTeam[t];
+    }
+
     public int[] getColsOfRole(int r) {
         return colsOfRole[r];
     }
@@ -223,6 +346,45 @@ public class TeamSortingInput {
 
     public Friendship[] getFriendships() {
         return this.friendships;
+    }
+
+    public Optional<Friendship> tryGetFriendship(String name) {
+        if (nameToFriends.containsKey(name)) {
+            return Optional.of(nameToFriends.get(name));
+        }
+        return Optional.empty();
+    }
+
+    public String[] convertTeamIndexToName(int ... t) {
+        String[] teamNames = new String[t.length];
+        for (int i = 0; i < teamNames.length; i++) {
+            teamNames[i] = teams[t[i]];
+        }
+        return teamNames;
+    }
+
+    public int[] convertTeamNameToIndex(String ... t) {
+        int[] teamIndexes = new int[t.length];
+        for (int i = 0; i < teamIndexes.length; i++) {
+            teamIndexes[i] = teamMap.get(t[i]);
+        }
+        return teamIndexes;
+    }
+
+    public String[] convertRoleIndexToName(int ... r) {
+        String[] roleNames = new String[r.length];
+        for (int i = 0; i < roleNames.length; i++) {
+            roleNames[i] = roles[r[i]];
+        }
+        return roleNames;
+    }
+
+    public int[] convertRoleNameToIndex(String ... r) {
+        int[] roleIndexes = new int[r.length];
+        for (int i = 0; i < roleIndexes.length; i++) {
+            roleIndexes[i] = roleMap.get(r[i]);
+        }
+        return roleIndexes;
     }
 
     public int[] getColsOfTeamRole(int t, int r) {
