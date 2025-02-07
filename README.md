@@ -39,6 +39,24 @@ would yield no solution even before running the linear program. It simply
 checks the total number of roles required by each team and the total number 
 of preferences for each team.
 
+### Random Input
+If you want to run the code with random input, you can use the folowing 
+command:  
+
+``java -jar ./app/TeamSorting.jar r 25 5 3 3 1 2 4 5 1 2``
+
+The numbers used in the command are the following arguments, in order:
+- Number of members
+- Number of teams
+- Number of roles
+- Number of preferences
+- Lower bound for number of each role required by each team
+- Upper bound for number of each role required by each team
+- Lower bound for minimum member count per team
+- Upper bound for minimum member count per team
+- Lower bound for number of roles each member can fulfill
+- Upper bound for number of roles each member can fulfill
+
 ## Modifying the Code
 
 

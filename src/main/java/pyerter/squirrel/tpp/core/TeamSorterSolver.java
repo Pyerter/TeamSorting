@@ -74,13 +74,15 @@ public class TeamSorterSolver {
     public TeamSorterResult solve(TeamSortingLogger logger) {
         Loader.loadNativeLibraries();
 
-        logger.log("Google OR-Tools version: " + OrToolsVersion.getVersionString());
+
+        logger.log("Advanced usage:");
+        logger.log("    Google OR-Tools version: " + OrToolsVersion.getVersionString());
 
         // Create the linear solver with the GLOP backend.
         String solverID = useIntegralVariables ? "SCIP" : "GLOP";
         MPSolver solver = MPSolver.createSolver(solverID);
         if (solver == null) {
-            logger.log(String.format("Could not create solver %s", solverID));
+            logger.log(String.format("    Could not create solver %s", solverID));
             return null;
         }
 
@@ -101,12 +103,12 @@ public class TeamSorterSolver {
         constraintCounts[4] = 0;
         for (int i = 0; i < constraint5.length; i++)
             constraintCounts[4] += constraint5[i].length;
-        logger.log(String.format("%dx%d Matrix: %d variables", input.numbRows(), input.numbAugmentedColumns(), input.numbRows() * input.numbAugmentedColumns()));
-        logger.log(String.format("Created %d constraints for column sums.", constraintCounts[0]));
-        logger.log(String.format("Created %d constraints for row sums.", constraintCounts[1]));
-        logger.log(String.format("Created %d constraints for member role assignments.", constraintCounts[2]));
-        logger.log(String.format("Created %d constraints for team size requirements.", constraintCounts[3]));
-        logger.log(String.format("Created %d constraints for friendship requirements.", constraintCounts[4]));
+        logger.log(String.format("%dx%d Matrix: %d variables", input.numbRows(), input.numbAugmentedColumns(), input.numbRows() * input.numbAugmentedColumns()), 3);
+        logger.log(String.format("Created %d constraints for column sums.", constraintCounts[0]), 3);
+        logger.log(String.format("Created %d constraints for row sums.", constraintCounts[1]), 3);
+        logger.log(String.format("Created %d constraints for member role assignments.", constraintCounts[2]), 3);
+        logger.log(String.format("Created %d constraints for team size requirements.", constraintCounts[3]), 3);
+        logger.log(String.format("Created %d constraints for friendship requirements.", constraintCounts[4]), 3);
 
         // Create the objective function
         int[] preferenceMultipliers = new int[input.getNumbPreferences()];
@@ -114,10 +116,10 @@ public class TeamSorterSolver {
             int val = preferenceMultipliers.length - i;
             preferenceMultipliers[i] = val * val;
         }
-        MPObjective objective = createObjectiveFunction(solver, vars, preferenceMultipliers);
+        MPObjective objective = createObjectiveFunction(logger, solver, vars, preferenceMultipliers);
         objective.setMaximization(); // we maximize it
 
-        logger.log("Solving with " + solver.solverVersion());
+        logger.log("    Solving with " + solver.solverVersion());
         final MPSolver.ResultStatus resultStatus = solver.solve();
 
         TeamSorterResult result = new TeamSorterResult(solver, objective, vars, input, resultStatus, preferenceMultipliers);
@@ -265,11 +267,11 @@ public class TeamSorterSolver {
         return constraints;
     }
 
-    protected MPObjective createObjectiveFunction(MPSolver solver, MPVariable[][] vars, int ... prefValues) {
+    protected MPObjective createObjectiveFunction(TeamSortingLogger logger, MPSolver solver, MPVariable[][] vars, int ... prefValues) {
         MPObjective objective = solver.objective();
         int objAdder = useHardPreferenceObjectiveFunction ? input.numbMembers() * (input.getNumbPreferences() + 2) : 0;
-        System.out.printf("Adding flat value to preference objective function: %d%n", objAdder);
-        System.out.printf("Should use hard objective function: %b", useHardPreferenceObjectiveFunction);
+        logger.log(String.format("Adding flat value to preference objective function: %d", objAdder), 3);
+        logger.log(String.format("Should use hard objective function: %b", useHardPreferenceObjectiveFunction), 3);
         forEach(vars, (v, i, j) -> {
             Member m = input.getMember(i);
             String[] preferences = m.getPreferredTeams();

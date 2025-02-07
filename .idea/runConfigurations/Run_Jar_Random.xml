@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run Jar Random" type="JarApplication">
+    <option name="JAR_PATH" value="$PROJECT_DIR$/app/TeamSorting.jar" />
+    <option name="PROGRAM_PARAMETERS" value="random 25 5 3 3 1 2 4 5 1 2" />
+    <option name="WORKING_DIRECTORY" value="C:\Coding Projects\TeamSorting" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2" />
+  </configuration>
+</component>
