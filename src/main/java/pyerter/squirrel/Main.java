@@ -69,7 +69,7 @@ public class Main {
             logger.log(result.toPrintFinalAssignments(), 1);
         } catch (TeamSorterInputReadingException e) {
             System.out.println(e.getMessage());
-            if (args.length > 1 && args[1].equalsIgnoreCase("--debug=true")) {
+            if (args.length > 1 && args[args.length - 1].equalsIgnoreCase("--debug=true")) {
                 e.getChildException().printStackTrace();
             } else {
                 System.out.println("To print exception, run with --debug=True");

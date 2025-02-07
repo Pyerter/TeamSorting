@@ -7,8 +7,10 @@ import pyerter.squirrel.tpp.core.TeamSorterResult;
 import pyerter.squirrel.tpp.core.TeamSorterSolver;
 import pyerter.squirrel.tpp.core.TeamSortingInput;
 import pyerter.squirrel.tpp.io.CsvReader;
-import pyerter.squirrel.tpp.friendship.TeamSorterBestFitFriendshipSolver;
-import pyerter.squirrel.tpp.friendship.TeamSorterFriendshipSolver;
+import pyerter.squirrel.tpp.friendship.TeamSorterFriendshipSolverOld;
+
+import java.util.Arrays;
+import java.util.stream.IntStream;
 
 /**
  * Author: Porter Squires
@@ -17,7 +19,7 @@ import pyerter.squirrel.tpp.friendship.TeamSorterFriendshipSolver;
  *
  */
 public class MainFriendship {
-    static boolean useFriendship = false;
+    static boolean useFriendship = true;
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -26,38 +28,52 @@ public class MainFriendship {
         }
         try {
             TeamSortingInput input;
-            TeamSortingLogger logger = new TeamSortingLogger(3);
-            if (args[0].equalsIgnoreCase("random")) {
-                input = TeamSortingGeneratorInput.generateInput(Integer.parseInt(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]),
-                        Integer.parseInt(args[4]), Integer.parseInt(args[5]), Integer.parseInt(args[6]),
-                        Integer.parseInt(args[7]), Integer.parseInt(args[8]), Integer.parseInt(args[0]), Integer.parseInt(args[10]));
+            TeamSortingLogger logger = new TeamSortingLogger(2);
+            if (args[0].equalsIgnoreCase("random") || args[0].equalsIgnoreCase("r")) {
+                System.out.printf("Attempting to generate random input...%n");
+                try {
+                    input = TeamSortingGeneratorInput.generateInput(Integer.parseInt(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]),
+                            Integer.parseInt(args[4]), Integer.parseInt(args[5]), Integer.parseInt(args[6]),
+                            Integer.parseInt(args[7]), Integer.parseInt(args[8]), Integer.parseInt(args[9]), Integer.parseInt(args[10]));
+                } catch (Exception e) {
+                    System.out.printf("Random input should have the following arguments:%n" +
+                            "<int:member count> <int:team count> <int:role count> <int: preference count> <int:members per role per team lower bound> <int:members per role per team upper bound> " +
+                            "<int:min team count lower bound> <int:min team count upper bound> <int:roles per member lower bound> <int:roles per member upper bound>");
+                    return;
+                }
             } else {
                 input = CsvReader.readProblemInputCsv(args[0]);
             }
-            if (false) {
-                TeamSorterBestFitFriendshipSolver solver2 = new TeamSorterBestFitFriendshipSolver(input);
-                solver2.solve();
+
+            if (input == null) {
+                System.out.printf("Err - when creating input, something errored. Input is null.%n");
                 return;
             }
-            boolean useIntegral = false;//input.numbFriendships() > 0;
-            TeamSorterSolver solver = !useFriendship ? new TeamSorterSolver(input, useIntegral) : new TeamSorterFriendshipSolver(input, useIntegral);
-            solver.setUseHardPreferenceObjectiveFunction(true);
-            solver.setIgnoreFriendships(true);
+
+            System.out.printf("Teams: %s%n", input.toPrintTeams());
+            System.out.printf("Roles: %s%n", input.toPrintRoles());
+            System.out.printf("Members: %s%n", input.toPrintMemberNames());
+            System.out.printf("Member Roles: %s%n", input.toPrintMemberRoles());
+            System.out.printf("Member Preferences: %s%n", input.toPrintMemberPreferences());
+            System.out.printf("Team Role Requirements: %s%n", input.toPrintTeamRoleRequirements());
+            System.out.printf("Minimum Team Counts: %s%n", Arrays.toString(IntStream.rangeClosed(0, input.numbTeams() - 1).map(input::getTeamMinimumMembers).toArray()).replace(",", ""));
+
+            logger.log(String.format("%nRunning solver..."), 0);
+
+            boolean useIntegral = input.numbFriendships() > 0;
+            TeamSorterSolver solver = new TeamSorterFriendshipSolverOld(input, useIntegral);
+            solver.setUseHardPreferenceObjectiveFunction(false);
+            solver.setIgnoreFriendships(false);
             TeamSorterResult result = solver.solve(logger);
 
             logger.log(result.toPrintAssignments(), 3);
-            if (useIntegral && !useFriendship) {
-                TeamSorterSolver fractionalSolver = new TeamSorterSolver(input, false);
-                TeamSorterResult fractResult = fractionalSolver.solve(logger);
-                logger.log("Fractional " + fractResult.toPrintStats());
-                logger.log(fractResult.toPrintFinalPreferences());
-            }
+
             logger.log("Result " + result.toPrintStats());
             logger.log(result.toPrintFinalPreferences());
             logger.log(result.toPrintFinalAssignments(), 1);
         } catch (TeamSorterInputReadingException e) {
             System.out.println(e.getMessage());
-            if (args.length > 1 && args[1].equalsIgnoreCase("--debug=true")) {
+            if (args.length > 1 && args[args.length - 1].equalsIgnoreCase("--debug=true")) {
                 e.getChildException().printStackTrace();
             } else {
                 System.out.println("To print exception, run with --debug=True");
