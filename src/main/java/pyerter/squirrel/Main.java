@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.stream.IntStream;
 
 // This runs team sorting without the use of friendships
+// app/example_format.csv --debug=True
 public class Main {
 
     static boolean useFriendship = false;
@@ -25,7 +26,11 @@ public class Main {
         }
         try {
             TeamSortingInput input;
-            TeamSortingLogger logger = new TeamSortingLogger(2);
+            int verbosity = 2;
+            if (args.length > 1 && args[args.length - 1].equalsIgnoreCase("--debug=true")) {
+                verbosity = 3;
+            }
+            TeamSortingLogger logger = new TeamSortingLogger(verbosity);
             if (args[0].equalsIgnoreCase("random") || args[0].equalsIgnoreCase("r")) {
                 System.out.printf("Attempting to generate random input...%n");
                 try {
