@@ -66,6 +66,7 @@ public class TeamSortingFriendshipTester {
             TeamSorterResult result = solver.solve(logger);
 
             logger.log("Result " + result.toPrintStats());
+            logger.log(result.toPrintAssignments());
             logger.log(result.toPrintFinalPreferences());
             logger.log(result.toPrintFinalAssignments(), 1);
         } catch (Exception e) {
@@ -80,7 +81,7 @@ public class TeamSortingFriendshipTester {
             logger2.log("Result " + result2.toPrintStats());
             logger2.log(result2.toPrintFinalPreferences());
             logger2.log(result2.toPrintFinalAssignments(), 1);
-            System.out.println("--------- Original attempt failed, retried with rounding algorithm");
+            System.out.println("--------- Original attempt failed, retried with rounding algorithm on LP without friendship constraints");
         }
     }
 

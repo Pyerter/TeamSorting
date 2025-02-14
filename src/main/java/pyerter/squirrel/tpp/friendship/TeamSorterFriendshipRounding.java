@@ -90,8 +90,8 @@ public class TeamSorterFriendshipRounding {
                     totalPossibleTeams++;
                 }
             }
-            //String[] friendshipNameArr = Arrays.stream(friendshipObjectiveValues[i]).map((f) -> String.format("Friendship %s to Team %d (%d)", f.getFriendship().getFriendshipName(), f.getTeam(), (int)f.getObjectiveValue())).toArray(String[]::new);
-            //System.out.printf("Friendship array: %s%n", Arrays.toString(friendshipNameArr));
+            String[] friendshipNameArr = Arrays.stream(friendshipObjectiveValues[i]).map((f) -> String.format("Friendship %s to Team %d (%d)", f.getFriendship().getFriendshipName(), f.getTeam(), (int)f.getObjectiveValue())).toArray(String[]::new);
+            System.out.printf("Friendship array: %s%n", Arrays.toString(friendshipNameArr));
             System.out.flush();
             Arrays.sort(friendshipObjectiveValues[i], (f1, f2) -> (int)((-f1.getObjectiveValue() + f2.getObjectiveValue())*10000));
         }
