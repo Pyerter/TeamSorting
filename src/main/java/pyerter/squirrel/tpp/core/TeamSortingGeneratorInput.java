@@ -1,13 +1,20 @@
 package pyerter.squirrel.tpp.core;
 
+import pyerter.squirrel.tpp.friendship.Friendship;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class TeamSortingGeneratorInput {
 
     public static TeamSortingInput generateInput(int memberCount, int teamCount, int roleCount, int preferenceCount, int roleReqLB, int roleReqUB, int minCountLB, int minCountUB, int memberRoleLB, int memberRoleUB) {
+        return generateInput(memberCount, teamCount, roleCount, preferenceCount, roleReqLB, roleReqUB, minCountLB, minCountUB, memberRoleLB, memberRoleUB, 0, 0, 0);
+    }
+
+    public static TeamSortingInput generateInput(int memberCount, int teamCount, int roleCount, int preferenceCount, int roleReqLB, int roleReqUB, int minCountLB, int minCountUB, int memberRoleLB, int memberRoleUB, int numbFriendships, int friendshipSizeLB, int friendshipSizeUB) {
 
         // Ensure input is valid
         if (minCountUB * teamCount > memberCount) {
@@ -75,6 +82,7 @@ public class TeamSortingGeneratorInput {
         int r = 0; // current role
         int c = 0; // current count of team assignments for team t
         randRange = memberRoleUB - memberRoleLB + 1;
+        List<Integer> friendshipSplits = new ArrayList<>();
         for (int m = 0; m < memberCount; m++) {
             // randomly select number of roles for this member
             int numbRoles = (int)(Math.random() * randRange) + memberRoleLB;
@@ -123,6 +131,7 @@ public class TeamSortingGeneratorInput {
                     r++;
                     if (r >= roleCount) {
                         r = 0;
+                        friendshipSplits.add(m + 1);
                         t++;
                     }
                 }
@@ -130,7 +139,53 @@ public class TeamSortingGeneratorInput {
             Member member = new Member("m" + m, mRoles, mPrefs);
             members.add(member); // add member
         }
-        return new TeamSortingInput(members, teams, roles, preferenceCount, teamRoleRequirements, minMemberCount);
+        Friendship[] friendships;
+        if (numbFriendships > 0) {
+            System.out.printf("Friendship splits: %s%n", Arrays.toString(friendshipSplits.toArray()));
+            friendships = new Friendship[numbFriendships];
+            for (int i = 0; i < numbFriendships; i++) {
+                int split = (int)(Math.random() * (friendshipSplits.size()));
+                if (friendshipSplits.get(split) >= members.size()) split--;
+                int splitStart = split > 0 ? friendshipSplits.get(split - 1) : 0;
+                int splitEnd = friendshipSplits.get(split);
+                Integer[] possibleValues = IntStream.rangeClosed(splitStart, splitEnd - 1).boxed().toArray( Integer[]::new );
+                List<Integer> values = new ArrayList<>(List.of(possibleValues));
+                if (split < friendshipSplits.size() - 1) {
+                    Integer[] anyValues = IntStream.rangeClosed(friendshipSplits.get(friendshipSplits.size() - 1), members.size() - 1).boxed().toArray(Integer[]::new);
+                    values.addAll(List.of(anyValues));
+                }
+                Collections.shuffle(values);
+                int[] friends = new int[Math.min(friendshipSizeLB, values.size())];
+                String[] friendNames = new String[friends.length];
+                for (int f = 0; f < friends.length; f++) {
+                    friends[f] = values.get(f);
+                    friendNames[f] = members.get(friends[f]).getName();
+                }
+                boolean skip = false;
+                for (int f = 0; f < i; f++) {
+                    for (String m: friendships[f].getFriends()) {
+                        for (int j = 0; j < friendNames.length; j++) {
+                            if (m.equalsIgnoreCase(friendNames[j])) {
+                                skip = true;
+                                System.out.println("Got repeated friend name- recreating friendship.");
+                                break;
+                            }
+                        }
+                        if (skip) break;
+                    }
+                    if (skip) break;
+                }
+                if (skip) {
+                    i--;
+                    continue;
+                }
+                Friendship friendship = new Friendship(String.format("Friendship{%s}", Arrays.toString(friendNames)), friendNames);
+                friendships[i] = friendship;
+            }
+        } else {
+            friendships = new Friendship[0];
+        }
+        return new TeamSortingInput(members, teams, roles, preferenceCount, teamRoleRequirements, minMemberCount, friendships);
     }
 
 

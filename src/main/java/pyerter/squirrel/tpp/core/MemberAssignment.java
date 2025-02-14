@@ -11,7 +11,7 @@ import java.util.Arrays;
  *
  */
 public class MemberAssignment {
-    public static final float TOLERANCE = 0.0000001f;
+    public static final float TOLERANCE = 0.00001f;
     protected int member;
     protected Member m;
     protected double[] teamAssignments;

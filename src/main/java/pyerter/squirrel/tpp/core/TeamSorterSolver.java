@@ -8,6 +8,7 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 import pyerter.squirrel.tpp.TeamSortingLogger;
 import pyerter.squirrel.tpp.friendship.Friendship;
+import pyerter.squirrel.tpp.friendship.TeamSorterFriendshipRounding;
 
 import java.util.Arrays;
 
@@ -29,6 +30,7 @@ public class TeamSorterSolver {
     protected boolean useFriendships = true;
     protected boolean useHardPreferenceObjectiveFunction = false;
     protected boolean ignoreFriendships = false;
+    protected boolean roundFriendships = false;
 
     public TeamSorterSolver(TeamSortingInput input) {
         this(input, false);
@@ -69,6 +71,10 @@ public class TeamSorterSolver {
 
     public void setIgnoreFriendships(boolean ignoreFriendships) {
         this.ignoreFriendships = ignoreFriendships;
+    }
+
+    public void setRoundFriendships(boolean roundFriendships) {
+        this.roundFriendships = roundFriendships;
     }
 
     public TeamSorterResult solve(TeamSortingLogger logger) {
@@ -121,6 +127,11 @@ public class TeamSorterSolver {
 
         logger.log("    Solving with " + solver.solverVersion());
         final MPSolver.ResultStatus resultStatus = solver.solve();
+
+        if (roundFriendships) {
+            TeamSorterFriendshipRounding rounding = new TeamSorterFriendshipRounding(solver, objective, vars, input, resultStatus, preferenceMultipliers);
+            int[] assignments = rounding.CalculateAssignments();
+        }
 
         TeamSorterResult result = new TeamSorterResult(solver, objective, vars, input, resultStatus, preferenceMultipliers);
 
