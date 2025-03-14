@@ -233,6 +233,10 @@ public class TeamSorterResult {
         return friendCount;
     }
 
+    public float getTheoreticalMaxObjectiveValue() {
+        return preferenceMultipliers[0] * input.numbMembers();
+    }
+
     public MPSolver getSolver() {
         return solver;
     }
