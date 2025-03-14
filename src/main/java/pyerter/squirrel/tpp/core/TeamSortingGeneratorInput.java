@@ -155,7 +155,7 @@ public class TeamSortingGeneratorInput {
                     values.addAll(List.of(anyValues));
                 }
                 Collections.shuffle(values);
-                int[] friends = new int[Math.min(friendshipSizeLB, values.size())];
+                int[] friends = new int[Math.min((int)(Math.random()*(friendshipSizeUB - friendshipSizeLB)) + friendshipSizeLB, values.size())];
                 String[] friendNames = new String[friends.length];
                 for (int f = 0; f < friends.length; f++) {
                     friends[f] = values.get(f);

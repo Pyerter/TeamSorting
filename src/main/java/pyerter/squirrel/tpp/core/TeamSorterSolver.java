@@ -9,6 +9,7 @@ import com.google.ortools.linearsolver.MPVariable;
 import pyerter.squirrel.tpp.TeamSortingLogger;
 import pyerter.squirrel.tpp.friendship.Friendship;
 import pyerter.squirrel.tpp.friendship.TeamSorterFriendshipRounding;
+import pyerter.squirrel.tpp.friendship.TeamSorterFriendshipRoundingConstrained;
 
 import java.util.Arrays;
 
@@ -128,12 +129,29 @@ public class TeamSorterSolver {
         logger.log("    Solving with " + solver.solverVersion());
         final MPSolver.ResultStatus resultStatus = solver.solve();
 
+        if (resultStatus != MPSolver.ResultStatus.FEASIBLE && resultStatus != MPSolver.ResultStatus.OPTIMAL) {
+            throw new RuntimeException("No feasible solution found.");
+        }
+
+        TeamSorterResult roundedResult = null;
         if (roundFriendships) {
-            TeamSorterFriendshipRounding rounding = new TeamSorterFriendshipRounding(solver, objective, vars, input, resultStatus, preferenceMultipliers);
-            int[] assignments = rounding.CalculateAssignments();
+            TeamSorterFriendshipRoundingConstrained rounding = new TeamSorterFriendshipRoundingConstrained(solver, objective, vars, input, resultStatus, preferenceMultipliers);
+            MemberAssignment[] assignments = rounding.calculateAssignments();
+            roundedResult = new TeamSorterResult(solver, objective, vars, input, resultStatus, preferenceMultipliers, assignments);
+            /*System.out.println("Rounded friendships! Result here...");
+            System.out.println("Result " + result2.toPrintStats());
+            System.out.println(result2.toPrintFinalPreferences());
+            System.out.println(result2.toPrintFinalFriendshipObjective());
+            System.out.println(result2.toPrintFinalAssignments());
+            System.out.println(result2.toPrintFinalFriendshipAssignments());*/
+            /*System.out.println("Rounding assignments for friendships!");
+            for (int m = 0; m < assignments.length; m++) {
+                System.out.println(assignments[m].toPrintFinalAssignment());
+            }*/
         }
 
         TeamSorterResult result = new TeamSorterResult(solver, objective, vars, input, resultStatus, preferenceMultipliers);
+        if (roundedResult != null) result.setRoundedResult(roundedResult);
 
         return result;
     }

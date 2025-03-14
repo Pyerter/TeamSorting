@@ -2,6 +2,8 @@
 src/main/resources/nosave
 data/nosave/
 
+wip_resources/
+
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

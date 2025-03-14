@@ -4,9 +4,9 @@ import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 import pyerter.squirrel.tpp.friendship.Friendship;
+import pyerter.squirrel.tpp.friendship.FriendshipObjectiveValues;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Author: Porter Squires
@@ -26,6 +26,28 @@ public class TeamSorterResult {
     protected final MPSolver.ResultStatus status;
     protected int[] preferenceMultipliers;
 
+    protected Map<String, Friendship> friendshipMap = new HashMap<>();
+    protected int friendCount = 0;
+    protected Map<Friendship, Integer> friendshipIndexMap = new HashMap<>();
+    protected Friendship[] friendships;
+    protected boolean calculatedFriendships = false;
+
+    protected TeamSorterResult roundedResult = null;
+
+    public TeamSorterResult(MPSolver solver, MPObjective objective, MPVariable[][] vars, TeamSortingInput input, final MPSolver.ResultStatus status, int[] preferenceMultipliers, MemberAssignment[] assignments) {
+        this.solver = solver;
+        this.objective = objective;
+        this.vars = vars;
+        this.input = input;
+        this.assignments = assignments;
+        assignmentMap = new HashMap<>();
+        for (int i = 0; i < assignments.length; i++) {
+            assignmentMap.put(input.getMember(i).getName(), assignments[i]);
+        }
+        this.status = status;
+        this.preferenceMultipliers = preferenceMultipliers;
+    }
+
     public TeamSorterResult(MPSolver solver, MPObjective objective, MPVariable[][] vars, TeamSortingInput input, final MPSolver.ResultStatus status, int[] preferenceMultipliers) {
         this.solver = solver;
         this.objective = objective;
@@ -39,6 +61,30 @@ public class TeamSorterResult {
         }
         this.status = status;
         this.preferenceMultipliers = preferenceMultipliers;
+    }
+
+    public TeamSorterResult(MPSolver solver, MPObjective objective, MPVariable[][] vars, TeamSortingInput input, final MPSolver.ResultStatus status, int[] preferenceMultipliers, TeamSorterResult roundedResult) {
+        this.solver = solver;
+        this.objective = objective;
+        this.vars = vars;
+        this.input = input;
+        assignments = new MemberAssignment[input.numbRows()];
+        assignmentMap = new HashMap<>();
+        for (int i = 0; i < assignments.length; i++) {
+            assignments[i] = new MemberAssignment(input, i, vars[i], detailedPrinting);
+            assignmentMap.put(input.getMember(i).getName(), assignments[i]);
+        }
+        this.status = status;
+        this.preferenceMultipliers = preferenceMultipliers;
+        this.roundedResult = roundedResult;
+    }
+
+    public TeamSorterResult getRoundedResult() {
+        return roundedResult;
+    }
+
+    public void setRoundedResult(TeamSorterResult result) {
+        this.roundedResult = result;
     }
 
     public boolean isValidSolution() {
@@ -68,6 +114,30 @@ public class TeamSorterResult {
         return out.substring(0, out.length() - 1);
     }
 
+    public String toPrintFinalFriendshipAssignments() {
+        if (!isValidSolution()) {
+            return "Solver could not find feasible solution.";
+        }
+        calculateFriendships();
+        String out = "";
+        for (int i = 0; i < friendships.length; i++) {
+            String currentFriendship = String.format("Friendship %d: ", i);
+            for (int t = 0; t < input.numbTeams(); t++) {
+                LinkedList<String> membersInTeam = new LinkedList<>();
+                for (String member : friendships[i].getFriends()) {
+                    if (assignmentMap.get(member).getFinalTeamAssignment() == t) {
+                        membersInTeam.add(member);
+                    }
+                }
+                if (membersInTeam.size() > 0) {
+                    currentFriendship += String.format("Team %d members %s, ", t, Arrays.toString(membersInTeam.toArray(String[]::new)));
+                }
+            }
+            out += currentFriendship + "\n";
+        }
+        return out.substring(0, out.length() - 1);
+    }
+
     public int[] getFinalPreferences() {
         int[] preferences = new int[input.getNumbPreferences() + 1];
         getObjectiveValue();
@@ -92,6 +162,75 @@ public class TeamSorterResult {
                     prefNumber, preferences[index]);
         }
         return out.substring(0, out.length() - 1);
+    }
+
+    public String toPrintFinalFriendshipObjective() {
+        if (!isValidSolution()) {
+            return "Solver could not find feasible solution.";
+        }
+        getObjectiveValue();
+        String out = "Final Friendship Objective: " + getFinalFriendshipObjectiveValue();
+        return out;
+    }
+
+    public void calculateFriendships() {
+        getObjectiveValue();
+        if (calculatedFriendships) return;
+
+        friendshipMap = new HashMap<>();
+        friendCount = 0;
+        friendshipIndexMap = new HashMap<>();
+        for (int i = 0; i < input.numbMembers(); i++) {
+            Optional<Friendship> friendship = input.tryGetFriendship(input.getMember(i).getName());
+            if (friendship.isPresent()) {
+                if (!friendshipMap.containsValue(friendship.get())) {
+                    friendshipIndexMap.put(friendship.get(), friendCount);
+                    friendCount++;
+                }
+                friendshipMap.put(input.getMember(i).getName(), friendship.get());
+            } else {
+                Friendship singleFriendship = new Friendship(input.getMember(i).getName(), input.getMember(i).getName());
+                singleFriendship.initialize(input);
+                friendshipMap.put(input.getMember(i).getName(), singleFriendship);
+                friendshipIndexMap.put(singleFriendship, friendCount);
+                friendCount++;
+            }
+        }
+        friendships = new Friendship[friendCount];
+        for (Friendship f: friendshipMap.values()) {
+            friendships[friendshipIndexMap.get(f)] = f;
+        }
+        calculatedFriendships = true;
+    }
+
+    public float getFinalFriendshipObjectiveValue() {
+        getObjectiveValue();
+        calculateFriendships();
+
+        float totalObjective = 0;
+
+        for (int fIndex = 0; fIndex < friendships.length; fIndex++) {
+            Friendship f = friendships[fIndex];
+            String[] friends = f.getFriends();
+            int[] friendTeamCounts = new int[input.numbTeams()];
+            for (String friend : friends) {
+                friendTeamCounts[assignmentMap.get(friend).getFinalTeamAssignment()] += 1;
+            }
+            for (int t = 0; t < friendTeamCounts.length; t++) {
+                float currentObjective = ((float)friendTeamCounts[t]) / friends.length;
+                currentObjective *= currentObjective;
+                totalObjective += currentObjective;
+            }
+        }
+
+        return totalObjective;
+    }
+
+    public float getTheoreticalMaxFriendshipObjectiveValue() {
+        getObjectiveValue();
+        calculateFriendships();
+
+        return friendCount;
     }
 
     public MPSolver getSolver() {
@@ -149,7 +288,7 @@ public class TeamSorterResult {
                 continue;
             }
             Friendship friendship = input.getNameToFriends().get(input.getMember(i).getName());
-            if (friendship != null) {
+            if (friendship != null && false) {
                 Member[] friends = friendship.getMembers();
                 for (int f = 0; f < friends.length; f++) {
                     int currentAssignment = assignmentMap.get(friends[f].getName()).getAssignedTeam(input);

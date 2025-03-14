@@ -112,6 +112,13 @@ public class MemberAssignment {
         this.finalTeamAssignmentRoleName = finalTeamAssignmentRole >= 0 ? input.getRoles()[finalTeamAssignmentRole] : "<Any>";
     }
 
+    public void setFinalTeamAssignmentColumn(int finalColumn, TeamSortingInput input) {
+        this.finalTeamAssignment = input.getJToTeam(finalColumn);
+        this.finalTeamAssignmentRole = input.getJToRole(finalColumn);
+        this.finalTeamAssignmentName = input.getTeams()[finalTeamAssignment];
+        this.finalTeamAssignmentRoleName = finalTeamAssignmentRole >= 0 ? input.getRoles()[finalTeamAssignmentRole] : "<Any>";
+    }
+
     public int getFinalTeamAssignment() {
         return finalTeamAssignment;
     }
