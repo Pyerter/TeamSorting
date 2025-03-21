@@ -1,6 +1,7 @@
 package pyerter.squirrel.tpp.io;
 
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvValidationException;
 import pyerter.squirrel.tpp.core.TeamSortingInput;
 import pyerter.squirrel.tpp.friendship.Friendship;
@@ -8,6 +9,7 @@ import pyerter.squirrel.tpp.core.Member;
 import pyerter.squirrel.tpp.friendship.TeamSortingFriendshipInput;
 
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -171,6 +173,83 @@ public class CsvReader {
             throw new TeamSorterInputReadingException("CsvValidationException: " + e.getMessage(), e);
         } catch (Exception e) {
             throw new TeamSorterInputReadingException("Other exception while parsing: " + e.getMessage(), e);
+        }
+    }
+
+    public static String writeProblemInputCsv(TeamSortingInput input, String filename) {
+        String filepath = CsvResultWriter.getFilePath(filename);
+        try (CSVWriter writer = new CSVWriter(new FileWriter(filepath))) {
+            List<String[]> data = new ArrayList<>();
+
+            String[] nextLine = new String[]{"Teams", "Roles", "Preferences", "Members"};
+            data.add(nextLine);
+            nextLine = new String[]{""+input.numbTeams(), ""+input.numbRoles(), ""+input.getNumbPreferences(), ""+input.numbMembers()};
+            data.add(nextLine);
+            nextLine = new String[0];
+            data.add(nextLine);
+            nextLine = new String[2 + input.numbRoles()];
+            nextLine[0] = "Roles";
+            nextLine[nextLine.length - 1] = "Min Members";
+            for (int i = 0; i < input.numbRoles(); i++) {
+                int index = i + 1;
+                nextLine[index] = input.getRoles()[i];
+            }
+            data.add(nextLine);
+            for (int t = 0; t < input.numbTeams(); t++) {
+                nextLine = new String[2 + input.numbRoles()];
+                nextLine[0] = input.getTeams()[t];
+                for (int i = 0; i < input.numbRoles(); i++) {
+                    int index = i + 1;
+                    nextLine[index] = "" + input.getTeamRoleRequiremenet(t, i);
+                }
+                nextLine[nextLine.length - 1] = "" + input.getTeamMinimumMembers(t);
+                data.add(nextLine);
+            }
+            nextLine = new String[0];
+            data.add(nextLine);
+
+            // TODO: Add section to csv that is member preference and fulfillable roles
+            nextLine = new String[1 + input.getNumbPreferences() + input.numbRoles()];
+            nextLine[0] = "Member";
+            int index = 1;
+            for (int i = 0; i < input.getNumbPreferences(); i++) {
+                nextLine[i + index] = "Pref " + (i + 1);
+            }
+            index += input.getNumbPreferences();
+            for (int i = 0; i < input.numbRoles(); i++) {
+                nextLine[i + index] = input.getRoles()[i];
+            }
+            data.add(nextLine);
+
+            for (int m = 0; m < input.numbMembers(); m++) {
+                index = 1;
+                nextLine = new String[1 + input.getNumbPreferences() + input.numbRoles()];
+                Member member = input.getMember(m);
+                nextLine[0] = member.getName();
+                String[] preferredTeams = member.getPreferredTeams();
+                for (int p = 0; p < input.getNumbPreferences(); p++) {
+                    nextLine[p + index] = preferredTeams[p];
+                }
+                index += input.getNumbPreferences();
+                int[] roleEncodings = member.getRoleEncodings(input.getRoleMap());
+                for (int r = 0; r < roleEncodings.length; r++) {
+                    nextLine[index + roleEncodings[r]] = "Y";
+                }
+                for (int r = 0; r < input.numbRoles(); r++) {
+                    if (nextLine[r] == null || nextLine[r].isBlank()) {
+                        nextLine[r] = "";
+                    }
+                }
+                data.add(nextLine);
+            }
+
+            writer.writeAll(data);
+
+            return filepath;
+        } catch (IOException e) {
+            String out = "IOException while attempting to write TPP Input to csv: " + e.getMessage();
+            System.out.println(out);
+            return null;
         }
     }
 

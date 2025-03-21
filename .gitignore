@@ -1,6 +1,7 @@
 ### Ignore the nosave resources directory
 src/main/resources/nosave
 data/nosave/
+experiments/
 
 wip_resources/
 

@@ -5,6 +5,8 @@ import pyerter.squirrel.tpp.core.TeamSorterResult;
 import pyerter.squirrel.tpp.core.TeamSorterSolver;
 import pyerter.squirrel.tpp.core.TeamSortingGeneratorInput;
 import pyerter.squirrel.tpp.core.TeamSortingInput;
+import pyerter.squirrel.tpp.io.CsvReader;
+import pyerter.squirrel.tpp.io.CsvResultWriter;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
@@ -12,24 +14,24 @@ import java.util.stream.IntStream;
 public class TeamSortingFriendshipTester {
 
     public static void main(String[] args) {
-        int memberCount = 25;
+        int memberCount = 40;
         int teamCount = 5;
-        int roleCount = 3;
+        int roleCount = 4;
         int preferenceCount = 3;
         // Role requirements for each team
         int roleReqLB = 1;
-        int roleReqUB = 2;
+        int roleReqUB = 3;
         // Minimum team sizes
         int minTeamCountLB = 4;
         int minTeamCountUB = 5;
         // Number of roles members have
         int memberRoleCountLB = 1;
-        int memberRoleCountUB = 2;
+        int memberRoleCountUB = 4;
         //if (memberCount < roleCount * roleReqUB * teamCount) memberCount = roleCount * roleReqUB * teamCount;
         //if (memberCount < minTeamCountUB * teamCount) memberCount = minTeamCountUB * teamCount;
-        int numbFriendships = 4;
+        int numbFriendships = 10;
         int friendshipSizeLB = 2;
-        int friendshipSizeUB = 5;
+        int friendshipSizeUB = 3;
 
         TeamSortingInput input = TeamSortingGeneratorInput.generateInput(memberCount, teamCount, roleCount, preferenceCount,
                 roleReqLB, roleReqUB, minTeamCountLB, minTeamCountUB, memberRoleCountLB, memberRoleCountUB,
@@ -105,6 +107,10 @@ public class TeamSortingFriendshipTester {
             System.out.println("--------- Original attempt failed, retried with rounding algorithm on LP without friendship constraints");
             System.out.printf("Failure Message: %s%n", failureMessage);
         }
+
+        CsvResultWriter.writeResultToFile(result, "genexperiment");
+        if (usingRounded) CsvResultWriter.writeResultToFile(roundedResult, "genexperiment_rounded");
+        CsvReader.writeProblemInputCsv(input, "genexperiment_input");
     }
 
 }

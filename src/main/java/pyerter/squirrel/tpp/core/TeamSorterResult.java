@@ -338,6 +338,62 @@ public class TeamSorterResult {
         return obj;
     }
 
+    public List<String[]> getCsvPrint() {
+        if (!isValidSolution()) {
+            return null;
+        }
 
+        // <preferences>, <preference multipliers>,
+        // objective function, friendship objective function, max obj. func., max friendship obj. func.
+
+        int prefColumns = input.getNumbPreferences() + 1;
+        String[] headers = new String[prefColumns * 2 + 6];
+        String[] values = new String[headers.length];
+        for (int i = 0; i < preferenceMultipliers.length; i++) {
+            headers[i] = "Preference " + i;
+        }
+
+        int[] preferences = getFinalPreferences();
+        for (int i = 1; i <= input.getNumbPreferences() + 1; i++) {
+            int index = (i % (input.getNumbPreferences() + 1));
+            int prefNumber = index - 1;
+            headers[index] = index == 0 ? "Not Preference" : "Preference " + index;
+            headers[index + prefColumns] = index == 0 ? "P None Value" : "P " + index + " Value";
+            values[index] = "" + preferences[index];
+            values[index + prefColumns] = "" + (index == 0 ? 1 : preferenceMultipliers[prefNumber]);
+        }
+        int index = prefColumns * 2;
+        headers[index] = "Objective";
+        headers[index + 1] = "Friendship Objective";
+        headers[index + 2] = "Max Objective";
+        headers[index + 3] = "Max Friendship Objective";
+        headers[index + 4] = "q";
+        headers[index + 5] = "M";
+        values[index] = "" + getObjectiveValue();
+        values[index + 1] = "" + getFinalFriendshipObjectiveValue();
+        values[index + 2] = "" + getTheoreticalMaxObjectiveValue();
+        values[index + 3] = "" + getTheoreticalMaxFriendshipObjectiveValue();
+        values[index + 4] = "" + input.getO();
+        values[index + 5] = "" + input.numbMembers();
+
+
+        List<String[]> list = new ArrayList<>();
+        list.add(headers);
+        list.add(values);
+        list.add(new String[0]); // spacer row
+
+        String[] assignmentHeaders = new String[]{"Member", "Team", "Role", "Preference"};
+        list.add(assignmentHeaders);
+        for (int i = 0; i < assignments.length; i++) {
+            // += assignments[i].toPrintFinalAssignment() + "\n";
+            String[] memberRow = new String[]{assignments[i].getMember().getName(),
+                    assignments[i].getFinalTeamAssignmentName(),
+                    assignments[i].getFinalTeamAssignmentRoleName(),
+                    "" + (input.getMember(i).getPreference(assignments[i].getFinalTeamAssignmentName()) + 1)
+            };
+            list.add(memberRow);
+        }
+        return list;
+    }
 
 }

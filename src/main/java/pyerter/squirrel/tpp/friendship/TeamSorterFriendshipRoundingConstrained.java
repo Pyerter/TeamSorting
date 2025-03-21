@@ -191,9 +191,9 @@ public class TeamSorterFriendshipRoundingConstrained {
             }
         }
 
-        //for (int fIndex = 0; fIndex < friendCount; fIndex++) {
-        //    System.out.printf("Friendship %d Assignment slots: %s%n", fIndex, Arrays.toString(friendshipAssignmentSlots[fIndex]));
-        //}
+        for (int fIndex = 0; fIndex < friendCount; fIndex++) {
+            System.out.printf("Friendship %d Assignment slots: %s%n", fIndex, Arrays.toString(friendshipAssignmentSlots[fIndex]));
+        }
 
         boolean[][] scannedFriendshipTeams = new boolean[friendCount][input.numbTeams()];
 
