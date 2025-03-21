@@ -14,22 +14,34 @@ import java.util.stream.IntStream;
 public class TeamSortingFriendshipTester {
 
     public static void main(String[] args) {
+        int count;
+        try {
+            count = Integer.parseInt(args[0]);
+        } catch (Exception e) {
+            count = 1;
+        }
+        for (int i = 0; i < count; i++) {
+            runTest(args);
+        }
+    }
+
+    public static void runTest(String[] args) {
         int memberCount = 40;
         int teamCount = 5;
         int roleCount = 4;
         int preferenceCount = 3;
         // Role requirements for each team
         int roleReqLB = 1;
-        int roleReqUB = 3;
+        int roleReqUB = 2;
         // Minimum team sizes
         int minTeamCountLB = 4;
-        int minTeamCountUB = 5;
+        int minTeamCountUB = 8;
         // Number of roles members have
         int memberRoleCountLB = 1;
         int memberRoleCountUB = 4;
         //if (memberCount < roleCount * roleReqUB * teamCount) memberCount = roleCount * roleReqUB * teamCount;
         //if (memberCount < minTeamCountUB * teamCount) memberCount = minTeamCountUB * teamCount;
-        int numbFriendships = 10;
+        int numbFriendships = 5 + ((int)(Math.random() * 5));
         int friendshipSizeLB = 2;
         int friendshipSizeUB = 3;
 
@@ -69,7 +81,7 @@ public class TeamSortingFriendshipTester {
         boolean caughtFailure = false;
         String failureMessage = "";
         try {
-            logger = new TeamSortingLogger(3);
+            logger = new TeamSortingLogger(1);
             result = solver.solve(logger);
             roundedResult = result.getRoundedResult();
         } catch (Exception e) {

@@ -120,7 +120,7 @@ public class TeamSorterSolver {
         // Create the objective function
         int[] preferenceMultipliers = new int[input.getNumbPreferences()];
         for (int i = 0; i < preferenceMultipliers.length; i++) {
-            int val = preferenceMultipliers.length - i;
+            int val = preferenceMultipliers.length - i + 1;
             preferenceMultipliers[i] = val * val;
         }
         MPObjective objective = createObjectiveFunction(logger, solver, vars, preferenceMultipliers);
@@ -305,15 +305,19 @@ public class TeamSorterSolver {
             Member m = input.getMember(i);
             String[] preferences = m.getPreferredTeams();
             int teamCol = input.getJToTeam(j);
-            if (teamCol < 0) return;
+            if (teamCol < 0) {
+                objective.setCoefficient(v, 1);
+                return;
+            }
             for (int p = 0; p < preferences.length; p++) {
                 Integer currentPref = input.getTeamMap().get(preferences[p]);
                 if (currentPref != null && currentPref == teamCol) {
                     if (p < prefValues.length)
                         objective.setCoefficient(v, prefValues[p] + objAdder);
-                    break;
+                    return;
                 }
             }
+            objective.setCoefficient(v, 1);
         });
         return objective;
     }

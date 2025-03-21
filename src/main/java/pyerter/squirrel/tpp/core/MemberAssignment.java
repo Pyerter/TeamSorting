@@ -152,7 +152,7 @@ public class MemberAssignment {
         if (preference >= 0) {
             return preferenceMultipliers[preference];
         }
-        return 0;
+        return 1;
         //return -preferenceMultipliers[0];
     }
 

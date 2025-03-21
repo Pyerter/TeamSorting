@@ -158,7 +158,7 @@ public class TeamSorterResult {
             int prefNumber = index - 1;
             out += String.format("    Preference (%s%d) %d: %d%n",
                     index == 0 ? "" : "+",
-                    prefNumber == -1 ? 0 : preferenceMultipliers[prefNumber],
+                    prefNumber == -1 ? 1 : preferenceMultipliers[prefNumber],
                     prefNumber, preferences[index]);
         }
         return out.substring(0, out.length() - 1);
