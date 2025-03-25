@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Deploy Run Friend" type="JarApplication">
+    <option name="JAR_PATH" value="$PROJECT_DIR$/app/TeamSortingFriendship.jar" />
+    <option name="PROGRAM_PARAMETERS" value="app/example_format.csv --debug=True" />
+    <option name="WORKING_DIRECTORY" value="C:\Coding Projects\TeamSorting" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2">
+      <option name="BuildArtifacts" enabled="true">
+        <artifact name="TeamSortingFriendship:jar" />
+      </option>
+    </method>
+  </configuration>
+</component>

@@ -2,6 +2,9 @@
   <artifact type="jar" name="TeamSorting:jar">
     <output-path>$PROJECT_DIR$/app</output-path>
     <root id="archive" name="TeamSorting.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/src/main/resources/manifests/main/META-INF/MANIFEST.MF" />
+      </element>
       <element id="module-output" name="TeamSorting" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/java/dev/jna/jna-platform/5.14.0/jna-platform-5.14.0.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/google/ortools/ortools-darwin-x86-64/9.10.4067/ortools-darwin-x86-64-9.10.4067.jar" path-in-jar="/" />
