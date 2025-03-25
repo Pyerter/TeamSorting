@@ -347,7 +347,7 @@ public class TeamSorterResult {
         // objective function, friendship objective function, max obj. func., max friendship obj. func.
 
         int prefColumns = input.getNumbPreferences() + 1;
-        String[] headers = new String[prefColumns * 2 + 6];
+        String[] headers = new String[prefColumns * 2 + 11];
         String[] values = new String[headers.length];
         for (int i = 0; i < preferenceMultipliers.length; i++) {
             headers[i] = "Preference " + i;
@@ -369,12 +369,38 @@ public class TeamSorterResult {
         headers[index + 3] = "Max Friendship Objective";
         headers[index + 4] = "q";
         headers[index + 5] = "M";
+        headers[index + 6] = "Friendships >1";
+        headers[index + 7] = "Min Friend Size";
+        headers[index + 8] = "Max Friend Size";
+        headers[index + 9] = "Average Friend Size";
+        headers[index + 10] = "No Friends";
         values[index] = "" + getObjectiveValue();
         values[index + 1] = "" + getFinalFriendshipObjectiveValue();
         values[index + 2] = "" + getTheoreticalMaxObjectiveValue();
         values[index + 3] = "" + getTheoreticalMaxFriendshipObjectiveValue();
         values[index + 4] = "" + input.getO();
         values[index + 5] = "" + input.numbMembers();
+        values[index + 6] = "" + input.numbFriendships();
+
+        int[] fSizes = new int[input.numbFriendships()];
+        for (int i = 0; i < input.numbFriendships(); i++) {
+            fSizes[i] = input.getFriendships()[i].size();
+        }
+        float total = 0;
+        int min = fSizes.length > 0 ? fSizes[0] : 1;
+        int max = fSizes.length > 0 ? fSizes[0] : 1;
+        for (int i : fSizes) {
+            total += i;
+            if (i < min) min = i;
+            if (i > max) max = i;
+        }
+        float average = total / (float)fSizes.length;
+        average = ((int)(average * 10000) / 10000f);
+
+        values[index + 7] = "" + min;
+        values[index + 8] = "" + max;
+        values[index + 9] = "" + total;
+        values[index + 10] = "" + (input.numbMembers() - total);
 
 
         List<String[]> list = new ArrayList<>();
@@ -393,6 +419,7 @@ public class TeamSorterResult {
             };
             list.add(memberRow);
         }
+
         return list;
     }
 

@@ -113,7 +113,7 @@ public class TeamSortingFriendshipTester {
             logger.log(String.format("Rounding improvement (friendship objective): %.3f", (roundedResult.getFinalFriendshipObjectiveValue() - result.getFinalFriendshipObjectiveValue())));
             logger.log(String.format("Rounding improvement   (standard objective): %.3f", (roundedResult.getObjectiveValue() - result.getObjectiveValue())));
             logger.log(String.format("Maximum value        (friendship objective): %.3f", (result.getTheoreticalMaxFriendshipObjectiveValue())));
-            logger.log(String.format("Maximum value        (friendship objective): %.3f", (result.getTheoreticalMaxObjectiveValue())));
+            logger.log(String.format("Maximum value          (standard objective): %.3f", (result.getTheoreticalMaxObjectiveValue())));
         }
         if (caughtFailure) {
             System.out.println("--------- Original attempt failed, retried with rounding algorithm on LP without friendship constraints");

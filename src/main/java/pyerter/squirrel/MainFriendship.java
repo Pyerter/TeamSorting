@@ -2,6 +2,7 @@ package pyerter.squirrel;
 
 import pyerter.squirrel.tpp.*;
 import pyerter.squirrel.tpp.core.TeamSortingGeneratorInput;
+import pyerter.squirrel.tpp.io.CsvResultWriter;
 import pyerter.squirrel.tpp.io.TeamSorterInputReadingException;
 import pyerter.squirrel.tpp.core.TeamSorterResult;
 import pyerter.squirrel.tpp.core.TeamSorterSolver;
@@ -60,17 +61,60 @@ public class MainFriendship {
 
             logger.log(String.format("%nRunning solver..."), 0);
 
-            boolean useIntegral = input.numbFriendships() > 0;
-            TeamSorterSolver solver = new TeamSorterFriendshipSolverOld(input, useIntegral);
+
+            TeamSorterSolver solver = new TeamSorterSolver(input, false);
             solver.setUseHardPreferenceObjectiveFunction(false);
             solver.setIgnoreFriendships(false);
-            TeamSorterResult result = solver.solve(logger);
+            solver.setRoundFriendships(true);
+            TeamSorterResult result;
+            TeamSorterResult roundedResult;
+            boolean caughtFailure = false;
+            String failureMessage = "";
+            try {
+                logger = new TeamSortingLogger(2);
+                result = solver.solve(logger);
+                roundedResult = result.getRoundedResult();
+            } catch (Exception e) {
+                solver.setUseHardPreferenceObjectiveFunction(false);
+                solver.setIgnoreFriendships(true);
+                solver.setRoundFriendships(true);
+                logger = new TeamSortingLogger(3);
+                result = solver.solve(logger);
+                roundedResult = result.getRoundedResult();
+                caughtFailure = true;
+                failureMessage = e.getMessage();
+                //e.printStackTrace();
+            }
 
-            logger.log(result.toPrintAssignments(), 3);
+            boolean usingRounded = roundedResult != null;
 
-            logger.log("Result " + result.toPrintStats());
+            logger.log("Direct Result - - - Assignment Values\n" + result.toPrintAssignments(), 3);
+            logger.log("Direct Result - - -\n" + result.toPrintFinalAssignments(), 1);
+            if (usingRounded) logger.log("Rounded Result - - -\n" + roundedResult.toPrintFinalAssignments(), 1);
+            logger.log("Direct Result - - -\n" + result.toPrintFinalFriendshipAssignments(), 1);
+            if (usingRounded) logger.log("Rounded Result - - -\n" + roundedResult.toPrintFinalFriendshipAssignments(), 1);
+            logger.log("Direct Result - - -\n" + result.toPrintStats());
             logger.log(result.toPrintFinalPreferences());
-            logger.log(result.toPrintFinalAssignments(), 1);
+            logger.log(result.toPrintFinalFriendshipObjective());
+            if (usingRounded) logger.log("Rounded Result - - -\n" + roundedResult.toPrintStats());
+            if (usingRounded) logger.log(roundedResult.toPrintFinalPreferences());
+            if (usingRounded) logger.log(roundedResult.toPrintFinalFriendshipObjective());
+            if (usingRounded) {
+                logger.log(String.format("Rounding improvement (friendship objective): %.3f", (roundedResult.getFinalFriendshipObjectiveValue() - result.getFinalFriendshipObjectiveValue())));
+                logger.log(String.format("Rounding improvement   (standard objective): %.3f", (roundedResult.getObjectiveValue() - result.getObjectiveValue())));
+                logger.log(String.format("Maximum value        (friendship objective): %.3f", (result.getTheoreticalMaxFriendshipObjectiveValue())));
+                logger.log(String.format("Maximum value          (standard objective): %.3f", (result.getTheoreticalMaxObjectiveValue())));
+            }
+            if (caughtFailure) {
+                System.out.println("--------- Original attempt failed, retried with rounding algorithm on LP without friendship constraints");
+                System.out.printf("Failure Message: %s%n", failureMessage);
+            }
+
+            CsvResultWriter.targetResultDirectoryName = "program_output";
+            String outputFile = CsvResultWriter.writeResultToFile(result, "result");
+            if (usingRounded) CsvResultWriter.writeResultToFile(roundedResult, "result_rounded");
+            CsvReader.writeProblemInputCsv(input, "result_input");
+            System.out.println("Wrote result to file: " + outputFile);
         } catch (TeamSorterInputReadingException e) {
             System.out.println(e.getMessage());
             if (args.length > 1 && args[args.length - 1].equalsIgnoreCase("--debug=true")) {

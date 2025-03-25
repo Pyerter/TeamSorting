@@ -181,9 +181,10 @@ public class CsvReader {
         try (CSVWriter writer = new CSVWriter(new FileWriter(filepath))) {
             List<String[]> data = new ArrayList<>();
 
-            String[] nextLine = new String[]{"Teams", "Roles", "Preferences", "Members"};
+            String[] nextLine = new String[]{"Teams", "Roles", "Preferences", "Members", "Friendships"};
             data.add(nextLine);
-            nextLine = new String[]{""+input.numbTeams(), ""+input.numbRoles(), ""+input.getNumbPreferences(), ""+input.numbMembers()};
+            nextLine = new String[]{""+input.numbTeams(), ""+input.numbRoles(),
+                    ""+input.getNumbPreferences(), ""+input.numbMembers(), ""+input.numbFriendships()};
             data.add(nextLine);
             nextLine = new String[0];
             data.add(nextLine);
@@ -240,6 +241,13 @@ public class CsvReader {
                         nextLine[r] = "";
                     }
                 }
+                data.add(nextLine);
+            }
+            data.add(new String[0]);
+            data.add(new String[]{"Friendships"});
+            for (int f = 0; f < input.numbFriendships(); f++) {
+                Friendship friendship = input.getFriendships()[f];
+                nextLine = friendship.getFriends();
                 data.add(nextLine);
             }
 

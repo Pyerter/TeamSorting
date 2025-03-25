@@ -60,12 +60,13 @@ public class TeamSortingInput {
 
         // create friendship groups
         nameToFriends = new HashMap<>();
+        HashMap<Friendship, String> reverseNameToFriends = new HashMap<>();
         for (int i = 0; i < friendships.length; i++) {
             Friendship current = friendships[i];
             String[] friends = current.getFriends();
             for (int j = 0; j < friends.length; j++) {
                 Friendship mapped = nameToFriends.putIfAbsent(friends[j], current);
-                if (mapped != null && !mapped.equals(current)) {
+                if (mapped != null && !mapped.equals(current)) { // not nul and occupied by something else, so merge friendship
                     Friendship merged = Friendship.merge(mapped, current, String.format("M<%s,%s>", mapped.getFriendshipName(), current.getFriendshipName()));
                     for (int f = 0; f < merged.getFriends().length; f++) {
                         nameToFriends.put(merged.getFriends()[f], merged);
@@ -74,10 +75,14 @@ public class TeamSortingInput {
                 }
             }
         }
+        int numbKeys = nameToFriends.keySet().size();
+        for (String k : nameToFriends.keySet()) {
+            reverseNameToFriends.putIfAbsent(nameToFriends.get(k), k);
+        }
 
-        friendCount = nameToFriends.values().size();
-        nameToFriends.values().forEach(f -> f.initialize(this));
-        this.friendships = nameToFriends.values().toArray(Friendship[]::new);
+        friendCount = reverseNameToFriends.keySet().size();
+        reverseNameToFriends.keySet().forEach(f -> f.initialize(this));
+        this.friendships = reverseNameToFriends.keySet().toArray(Friendship[]::new);
         // System.out.printf("Number friendships: %d%n", friendships.length);
         if (friendships.length > 0) {
             System.out.printf("Friendships: %s%n", Arrays.toString(Arrays.stream(this.friendships)

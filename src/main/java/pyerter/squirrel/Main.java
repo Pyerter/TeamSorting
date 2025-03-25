@@ -6,6 +6,7 @@ import pyerter.squirrel.tpp.core.TeamSorterSolver;
 import pyerter.squirrel.tpp.core.TeamSortingGeneratorInput;
 import pyerter.squirrel.tpp.core.TeamSortingInput;
 import pyerter.squirrel.tpp.io.CsvReader;
+import pyerter.squirrel.tpp.io.CsvResultWriter;
 import pyerter.squirrel.tpp.io.TeamSorterInputReadingException;
 
 import java.util.Arrays;
@@ -72,6 +73,11 @@ public class Main {
             logger.log("Result " + result.toPrintStats());
             logger.log(result.toPrintFinalPreferences());
             logger.log(result.toPrintFinalAssignments(), 1);
+
+            String outputFile = CsvResultWriter.targetResultDirectoryName = "program_output";
+            CsvResultWriter.writeResultToFile(result, "result");
+            CsvReader.writeProblemInputCsv(input, "result_input");
+            System.out.println("Wrote result to file: " + outputFile);
         } catch (TeamSorterInputReadingException e) {
             System.out.println(e.getMessage());
             if (args.length > 1 && args[args.length - 1].equalsIgnoreCase("--debug=true")) {

@@ -15,8 +15,10 @@ import java.util.regex.Pattern;
 
 public class CsvResultWriter {
 
+    public static String targetResultDirectoryName = "experiments";
+
     public static String getFilePath(String baseName) {
-        File targetDirectory = new File("experiments");
+        File targetDirectory = new File(targetResultDirectoryName);
         if (!targetDirectory.exists()) {
             if (!targetDirectory.mkdirs()) return null;
         }
@@ -44,13 +46,13 @@ public class CsvResultWriter {
         return new File(directory, baseName + nextIndex + ".csv").getAbsolutePath();
     }
 
-    public static boolean writeResultToFile(TeamSorterResult result, String baseName) {
+    public static String writeResultToFile(TeamSorterResult result, String baseName) {
         String filePath = getFilePath(baseName);
         boolean recoverWithNormalPrint = false;
         if (filePath == null) recoverWithNormalPrint = true;
         try (CSVWriter writer = new CSVWriter(new FileWriter(filePath))) {
             writer.writeAll(result.getCsvPrint());
-            return true;
+            return filePath;
         } catch (IOException e) {
             System.out.println("IOException while attempting to write result to csv: " + filePath + " > " + e.getMessage());
             recoverWithNormalPrint = true;
@@ -58,7 +60,7 @@ public class CsvResultWriter {
             System.out.println("Exception while attempting to write result to csv: " + filePath + " > " + e.getMessage());
             recoverWithNormalPrint = true;
         }
-        return false;
+        return null;
     }
 
     public static void printNormalResult(TeamSortingLogger logger) {

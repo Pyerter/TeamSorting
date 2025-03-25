@@ -2,6 +2,7 @@
 src/main/resources/nosave
 data/nosave/
 experiments/
+program_output/*.csv
 
 wip_resources/
 
