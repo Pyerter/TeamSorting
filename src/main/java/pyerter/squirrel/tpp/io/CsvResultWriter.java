@@ -16,11 +16,18 @@ import java.util.regex.Pattern;
 public class CsvResultWriter {
 
     public static String targetResultDirectoryName = "experiments";
+    public static String subdirectoryName = "";
 
     public static String getFilePath(String baseName) {
         File targetDirectory = new File(targetResultDirectoryName);
         if (!targetDirectory.exists()) {
             if (!targetDirectory.mkdirs()) return null;
+        }
+        if (subdirectoryName != null && !subdirectoryName.isBlank()) {
+            targetDirectory = new File(targetResultDirectoryName + File.separator + subdirectoryName);
+            if (!targetDirectory.exists()) {
+                if (!targetDirectory.mkdirs()) return null;
+            }
         }
 
         return getNextExperimentName(targetDirectory, baseName);

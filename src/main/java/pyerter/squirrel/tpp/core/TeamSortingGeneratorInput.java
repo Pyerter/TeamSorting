@@ -10,6 +10,9 @@ import java.util.stream.IntStream;
 
 public class TeamSortingGeneratorInput {
 
+    public static boolean _comepletelyRandomFriends = true;
+    public static boolean _uniformRandomMMinusQ = true;
+
     public static TeamSortingInput generateInput(int memberCount, int teamCount, int roleCount, int preferenceCount, int roleReqLB, int roleReqUB, int minCountLB, int minCountUB, int memberRoleLB, int memberRoleUB) {
         return generateInput(memberCount, teamCount, roleCount, preferenceCount, roleReqLB, roleReqUB, minCountLB, minCountUB, memberRoleLB, memberRoleUB, 0, 0, 0);
     }
@@ -39,6 +42,18 @@ public class TeamSortingGeneratorInput {
             return null;
         }
 
+        int mmq = -1;int maxTRR = teamCount * roleCount * roleReqUB;
+        int maxTC = teamCount * minCountUB;
+        int maxF = numbFriendships * friendshipSizeUB;
+        int minTRR = teamCount * roleCount * roleReqLB;
+        int minTC = teamCount * minCountLB;
+        int minF = numbFriendships * friendshipSizeLB;
+        int maxMMQ = Math.max(Math.max(maxTRR, maxTC), maxF);
+        int minMMQ = Math.max(Math.max(minTRR, minTC), minF);
+        if (_uniformRandomMMinusQ) {
+            mmq = (int)(Math.random() * (maxMMQ - minMMQ + 1)) + minMMQ;
+        }
+
         // create members list (will store members later)
         List<Member> members = new ArrayList<>(memberCount);
         String[] teams = new String[teamCount]; // teams by number
@@ -51,31 +66,70 @@ public class TeamSortingGeneratorInput {
         }
         int requiredMembers = 0;
         int[][] teamRoleRequirements = new int[teamCount][roleCount]; // create mapping for number of roles per team
-        int randRange = roleReqUB - roleReqLB + 1;
-        for (int t = 0; t < teamCount; t++) {
-            for (int r = 0; r < roleCount; r++) {
-                teamRoleRequirements[t][r] = (int)(Math.random() * randRange) + roleReqLB; // randomly generated
-                requiredMembers += teamRoleRequirements[t][r];
+        int randRange;
+        if (mmq < 0) { // if randomly generating
+            randRange = roleReqUB - roleReqLB + 1;
+            for (int t = 0; t < teamCount; t++) {
+                for (int r = 0; r < roleCount; r++) {
+                    teamRoleRequirements[t][r] = (int) (Math.random() * randRange) + roleReqLB; // randomly generated
+                    requiredMembers += teamRoleRequirements[t][r];
+                }
             }
+            if (requiredMembers > memberCount) {
+                memberCount = requiredMembers;
+            }
+            requiredMembers = 0;
+        } else { // randomly generating under mmq
+            randRange = teamCount * roleCount;
+            for (int t = 0; t < teamCount; t++) {
+                for (int r = 0; r < roleCount; r++) {
+                    teamRoleRequirements[t][r] = roleReqLB;
+                    requiredMembers += roleReqLB;
+                }
+            }
+            int remainingMMQ = (int)(Math.random() * (Math.min(mmq, maxTRR) - requiredMembers + 1));
+            while (remainingMMQ > 0) {
+                int index = (int)(Math.random() * randRange);
+                int tIndex = index % teamCount;
+                int rIndex = index / teamCount;
+                if (teamRoleRequirements[tIndex][rIndex] < roleReqUB) {
+                    teamRoleRequirements[tIndex][rIndex]++;
+                    remainingMMQ--;
+                }
+            }
+            requiredMembers = 0;
         }
-        if (requiredMembers > memberCount) {
-            memberCount = requiredMembers;
-        }
-        requiredMembers = 0;
 
         // set min team counts
         // max between number of required roles and a random min team requirement
         int[] minMemberCount = new int[teamCount];
-        randRange = minCountUB - minCountLB + 1;
-        for (int t = 0; t < teamCount; t++) {
-            int totalRoleRequirement = Arrays.stream(teamRoleRequirements[t]).reduce(0, Integer::sum);
-            minMemberCount[t] = Math.max(totalRoleRequirement, (int)(Math.random() * randRange) + minCountLB);
-            requiredMembers += minMemberCount[t];
+        if (mmq < 0) {
+            randRange = minCountUB - minCountLB + 1;
+            for (int t = 0; t < teamCount; t++) {
+                int totalRoleRequirement = Arrays.stream(teamRoleRequirements[t]).reduce(0, Integer::sum);
+                minMemberCount[t] = Math.max(totalRoleRequirement, (int) (Math.random() * randRange) + minCountLB);
+                requiredMembers += minMemberCount[t];
+            }
+            if (requiredMembers > memberCount) {
+                memberCount = requiredMembers;
+            }
+            requiredMembers = 0;
+        } else {
+            randRange = teamCount;
+            for (int t = 0; t < teamCount; t++) {
+                minMemberCount[t] = minCountLB;
+                requiredMembers += minCountLB;
+            }
+            int remainingMMQ = Math.min(mmq, maxTC) - requiredMembers;
+            while (remainingMMQ > 0) {
+                int index = (int)(Math.random() * randRange);
+                if (minMemberCount[index] < minCountUB) {
+                    minMemberCount[index]++;
+                    remainingMMQ--;
+                }
+            }
+            requiredMembers = 0;
         }
-        if (requiredMembers > memberCount) {
-            memberCount = requiredMembers;
-        }
-        requiredMembers = 0;
 
         int o = 0; // total team-specific assignments needed
         int t = 0; // current team
@@ -143,19 +197,46 @@ public class TeamSortingGeneratorInput {
         if (numbFriendships > 0) {
             System.out.printf("Friendship splits: %s%n", Arrays.toString(friendshipSplits.toArray()));
             friendships = new Friendship[numbFriendships];
+            int[] friendshipSizes = new int[numbFriendships];
+            if (mmq < 0) {
+                for (int f = 0; f < numbFriendships; f++) {
+                    friendshipSizes[f] = (int)(Math.random()*(friendshipSizeUB - friendshipSizeLB + 1)) + friendshipSizeLB;
+                }
+            } else {
+                randRange = numbFriendships;
+                for (int f = 0; f < numbFriendships; f++) {
+                    friendshipSizes[f] = friendshipSizeLB;
+                    requiredMembers += friendshipSizeLB;
+                }
+                int remainingMMQ = (int)(Math.random() * (Math.min(mmq, maxF) - requiredMembers + 1));
+                while (remainingMMQ > 0) {
+                    int index = (int)(Math.random() * randRange);
+                    if (friendshipSizes[index] < friendshipSizeUB) {
+                        friendshipSizes[index]++;
+                        remainingMMQ--;
+                    }
+                }
+            }
             for (int i = 0; i < numbFriendships; i++) {
                 int split = (int)(Math.random() * (friendshipSplits.size()));
                 if (friendshipSplits.get(split) >= members.size()) split--;
-                int splitStart = split > 0 ? friendshipSplits.get(split - 1) : 0;
-                int splitEnd = friendshipSplits.get(split);
+                int splitStart;
+                int splitEnd;
+                if (_comepletelyRandomFriends) {
+                    splitStart = 0;
+                    splitEnd = memberCount;
+                } else {
+                    splitStart = split > 0 ? friendshipSplits.get(split - 1) : 0;
+                    splitEnd = friendshipSplits.get(split);
+                }
                 Integer[] possibleValues = IntStream.rangeClosed(splitStart, splitEnd - 1).boxed().toArray( Integer[]::new );
                 List<Integer> values = new ArrayList<>(List.of(possibleValues));
-                if (split < friendshipSplits.size() - 1) {
+                if (!_comepletelyRandomFriends && split < friendshipSplits.size() - 1) {
                     Integer[] anyValues = IntStream.rangeClosed(friendshipSplits.get(friendshipSplits.size() - 1), members.size() - 1).boxed().toArray(Integer[]::new);
                     values.addAll(List.of(anyValues));
                 }
                 Collections.shuffle(values);
-                int[] friends = new int[Math.min((int)(Math.random()*(friendshipSizeUB - friendshipSizeLB)) + friendshipSizeLB, values.size())];
+                int[] friends = new int[Math.min(friendshipSizes[i], values.size())];
                 String[] friendNames = new String[friends.length];
                 for (int f = 0; f < friends.length; f++) {
                     friends[f] = values.get(f);

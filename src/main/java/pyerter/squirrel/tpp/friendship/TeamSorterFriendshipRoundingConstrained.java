@@ -23,11 +23,12 @@ public class TeamSorterFriendshipRoundingConstrained {
     protected Map<Friendship, Integer> friendshipIndexMap;
     protected Friendship[] friendships;
     protected int friendCount = 0;
-    protected int[] currentFriendshipChecker;
+    protected boolean[][] currentFriendshipChecker;
     protected FriendshipObjectiveValues[][] friendshipObjectiveValues;
     protected FriendshipConcentrationValues[][] friendshipConcentrationValues;
     protected double[][] solution;
     protected boolean[][] finalizedValues;
+    protected FriendshipConcentrationValues highestConcentrationValue = null;
 
     public TeamSorterFriendshipRoundingConstrained(MPSolver solver, MPObjective objective, MPVariable[][] vars,
                                                    TeamSortingInput input, final MPSolver.ResultStatus status, int[] preferenceMultipliers) {
@@ -76,7 +77,7 @@ public class TeamSorterFriendshipRoundingConstrained {
         friendships = new Friendship[friendCount];
         friendshipObjectiveValues = new FriendshipObjectiveValues[friendCount][];
         friendshipConcentrationValues = new FriendshipConcentrationValues[friendCount][];
-        currentFriendshipChecker = new int[friendCount];
+        currentFriendshipChecker = new boolean[friendCount][input.numbTeams()];
         for (Friendship f: friendshipMap.values()) {
             friendships[friendshipIndexMap.get(f)] = f;
         }
@@ -106,13 +107,56 @@ public class TeamSorterFriendshipRoundingConstrained {
                     friendshipObjectiveValues[i][totalPossibleTeams] = friendshipObj;
                     FriendshipConcentrationValues friendshipConcentration = new FriendshipConcentrationValues(friendships[i], t, input, solution);
                     friendshipConcentrationValues[i][totalPossibleTeams] = friendshipConcentration;
+                    if ((highestConcentrationValue == null
+                            || friendshipConcentration.getObjectiveValue() > highestConcentrationValue.getObjectiveValue()))
+                        highestConcentrationValue = friendshipConcentration;
                     totalPossibleTeams++;
+                    currentFriendshipChecker[i][t] = true;
                 }
             }
             //String[] friendshipNameArr = Arrays.stream(friendshipObjectiveValues[i]).map((f) -> String.format("Friendship %s to Team %d (%d)", f.getFriendship().getFriendshipName(), f.getTeam(), (int)f.getObjectiveValue())).toArray(String[]::new);
             //System.out.printf("Friendship array: %s%n", Arrays.toString(friendshipNameArr));
             //System.out.flush();
             Arrays.sort(friendshipObjectiveValues[i], (f1, f2) -> (int)((-f1.getObjectiveValue() + f2.getObjectiveValue())*10000));
+            Arrays.sort(friendshipConcentrationValues[i], (f1, f2) -> (int)((-f1.getObjectiveValue() + f2.getObjectiveValue())*10000));
+        }
+    }
+
+    //
+    public void computeFriendshipConcentrationValues() {
+        friendshipConcentrationValues = new FriendshipConcentrationValues[friendCount][];
+        highestConcentrationValue = null;
+        // O(|F||T| * log_2(|T|)) or O(|F||F_i||T|)
+        for (int i = 0; i < friendCount; i++) { // O(|F|)
+            boolean[] possibleTeams = new boolean[input.numbTeams()];
+
+            for (Member m: friendships[i].getMembers()) { // O(|F_i|)
+                MemberAssignment assignment = assignments[input.getMemberIndex(m)];
+                int[] teams = assignment.getAssignedTeams();
+                for (int t = 0; t < teams.length; t++) { // O(|T|)
+                    int teamIndex = input.getJToTeam(teams[t]);
+                    if (teamIndex < 0) teamIndex = input.convertTeamNameToIndex(m.getPreferredTeams()[0])[0];
+                    possibleTeams[teamIndex] = true;
+                }
+            }
+            int totalPossibleTeams = 0;
+            for (int t = 0; t < possibleTeams.length; t++) { // O(|T|)
+                if (possibleTeams[t]) totalPossibleTeams++;
+            }
+            friendshipConcentrationValues[i] = new FriendshipConcentrationValues[totalPossibleTeams];
+            totalPossibleTeams = 0;
+            for (int t = 0; t < possibleTeams.length; t++) { // O(|T|)
+                if (possibleTeams[t]) {
+                    FriendshipConcentrationValues friendshipConcentration = new FriendshipConcentrationValues(friendships[i], t, input, solution);
+                    friendshipConcentrationValues[i][totalPossibleTeams] = friendshipConcentration;
+                    if (currentFriendshipChecker[i][t] &&
+                            (highestConcentrationValue == null
+                                    || friendshipConcentration.getObjectiveValue() > highestConcentrationValue.getObjectiveValue()))
+                        highestConcentrationValue = friendshipConcentration;
+                    totalPossibleTeams++;
+                }
+            }
+            // O(|T|log_2(|T|))
             Arrays.sort(friendshipConcentrationValues[i], (f1, f2) -> (int)((-f1.getObjectiveValue() + f2.getObjectiveValue())*10000));
         }
     }
@@ -170,6 +214,7 @@ public class TeamSorterFriendshipRoundingConstrained {
             friendshipQueue.add(friendshipConcentrationValues[f][0]);
         }
 
+        /*
         int[] assignments = new int[input.numbMembers()];
 
         int[][] friendshipAssignmentSlots = new int[friendCount][];
@@ -189,7 +234,7 @@ public class TeamSorterFriendshipRoundingConstrained {
                     return null;
                 }
             }
-        }
+        }*/
 
         //for (int fIndex = 0; fIndex < friendCount; fIndex++) {
         //    System.out.printf("Friendship %d Assignment slots: %s%n", fIndex, Arrays.toString(friendshipAssignmentSlots[fIndex]));
@@ -197,11 +242,20 @@ public class TeamSorterFriendshipRoundingConstrained {
 
         boolean[][] scannedFriendshipTeams = new boolean[friendCount][input.numbTeams()];
 
-        while (!friendshipQueue.isEmpty()) {
-            FriendshipConcentrationValues fValues = friendshipQueue.poll();
+        //while (!friendshipQueue.isEmpty()) {
+        while (highestConcentrationValue != null) {
+            // verify that the concentration values didn't stop this current team from being next
+            FriendshipConcentrationValues fValues = highestConcentrationValue; // friendshipQueue.poll();
             Friendship friendship = fValues.getFriendship();
             int fIndex = friendshipIndexMap.get(fValues.getFriendship());
             int currentSearchTeam = fValues.getTeam();
+            /*if (fValues.getObjectiveValue() < highestAvailableConcentrationValue) {
+                int nextCheckTeam = getNextConcentrationCheckTeam(fIndex);
+                if (nextCheckTeam >= 0) {
+                    friendshipQueue.add(friendshipConcentrationValues[fIndex][nextCheckTeam]);
+                    continue;
+                }
+            }*/
             boolean[] searchTeams = new boolean[input.numbTeams()];
             boolean[] searchableMembers = new boolean[input.numbMembers()];
 
@@ -222,17 +276,17 @@ public class TeamSorterFriendshipRoundingConstrained {
                 if (memberTeam < 0) {
                     if (targetMember.getPreference(input.getTeams()[currentSearchTeam]) >= 0) {
                         finalizedValues[memberRow][memberColumn] = true;
-                        assignments[memberRow] = currentSearchTeam;
+                        //assignments[memberRow] = currentSearchTeam;
                         this.assignments[memberRow].setFinalTeamAssignment(currentSearchTeam, input);
-                        friendshipAssignmentSlots[fIndex][fMember] = currentSearchTeam;
+                        //friendshipAssignmentSlots[fIndex][fMember] = currentSearchTeam;
                     }
                     continue;
                 }
                 if (!searchTeams[memberTeam]) {
                     finalizedValues[memberRow][memberColumn] = true;
-                    assignments[memberRow] = memberTeam;
+                    //assignments[memberRow] = memberTeam;
                     this.assignments[memberRow].setFinalTeamAssignmentColumn(memberColumn, input);
-                    friendshipAssignmentSlots[fIndex][fMember] = currentSearchTeam;
+                    //friendshipAssignmentSlots[fIndex][fMember] = currentSearchTeam;
                     continue;
                 }
                 boolean swapped = false;
@@ -245,9 +299,9 @@ public class TeamSorterFriendshipRoundingConstrained {
                             solution[memberRow][victimCol] = temp;
                             finalizedValues[memberRow][victimCol] = true;
                             this.assignments[memberRow].setFinalTeamAssignmentColumn(victimCol, input);
-                            assignments[memberRow] = currentSearchTeam;
+                            //assignments[memberRow] = currentSearchTeam;
                             swapped = true;
-                            friendshipAssignmentSlots[fIndex][fMember] = currentSearchTeam;
+                            //friendshipAssignmentSlots[fIndex][fMember] = currentSearchTeam;
                             Friendship victimFriendship = this.friendshipMap.get(input.getMember(victimMember).getName());
                             if (victimFriendship != null) {
                                 int friendshipMemberIndex = -1;
@@ -262,7 +316,7 @@ public class TeamSorterFriendshipRoundingConstrained {
                                 if (friendshipMemberIndex >= 0) {
                                     //System.out.printf("Debug - - - - fIndex %d, memberIndex %d%n", friendshipIndexMap.get(victimFriendship), friendshipMemberIndex);
                                     //System.out.printf("Debug - - - - friendship: %s%n", Arrays.toString(victimFriendship.getFriends()));
-                                    friendshipAssignmentSlots[friendshipIndexMap.get(victimFriendship)][friendshipMemberIndex] = memberTeam;
+                                    //friendshipAssignmentSlots[friendshipIndexMap.get(victimFriendship)][friendshipMemberIndex] = memberTeam;
                                 } else {
                                     System.out.printf("Err: could not alter member assignment of member %d (friend index %d) because not in friendship%n", victimMember, friendshipMemberIndex);
                                 }
@@ -275,15 +329,39 @@ public class TeamSorterFriendshipRoundingConstrained {
             }
 
             scannedFriendshipTeams[fIndex][currentSearchTeam] = true;
+            currentFriendshipChecker[fIndex][currentSearchTeam] = false;
+            computeFriendshipConcentrationValues();
 
-            currentFriendshipChecker[fIndex] += 1;
-            if (currentFriendshipChecker[fIndex] < friendshipConcentrationValues[fIndex].length) {
-                friendshipQueue.add(friendshipConcentrationValues[fIndex][currentFriendshipChecker[fIndex]]);
-            }
+            /*int nextCheckTeam = getNextConcentrationCheckTeam(fIndex);
+            if (nextCheckTeam >= 0) {
+                friendshipQueue.add(friendshipConcentrationValues[fIndex][nextCheckTeam]);
+            }*/
 
         }
 
         return this.assignments;
+    }
+
+    public int getNextConcentrationCheckTeam(int fIndex) {
+        int teamsLeft = 0;
+        for (int t = 0; t < currentFriendshipChecker[fIndex].length; t++) {
+            if (currentFriendshipChecker[fIndex][t]) teamsLeft++;
+        }
+        if (teamsLeft > 0) {
+            int nextCheckTeam = -1;
+            for (int tConcentration = 0; tConcentration < friendshipConcentrationValues[fIndex].length; tConcentration++) {
+                if (!currentFriendshipChecker[fIndex][friendshipConcentrationValues[fIndex][tConcentration].getTeam()])
+                    continue;
+                if (nextCheckTeam < 0) {
+                    nextCheckTeam = tConcentration;
+                } else if (friendshipConcentrationValues[fIndex][tConcentration].getObjectiveValue() >
+                        friendshipConcentrationValues[fIndex][nextCheckTeam].getObjectiveValue()) {
+                    nextCheckTeam = tConcentration;
+                }
+            }
+            return nextCheckTeam;
+        }
+        return -1;
     }
 
     public boolean canFitFriendship(Friendship f, int t, int[] assignments, int currentMemberCount) {
@@ -294,6 +372,7 @@ public class TeamSorterFriendshipRoundingConstrained {
         return false;
     }
 
+    /*
     public int[] CalculateAssignments() {
         int[] assignments = new int[input.numbMembers()];
         int[] teamMembers = new int[input.numbTeams()];
@@ -332,7 +411,7 @@ public class TeamSorterFriendshipRoundingConstrained {
 
         return assignments;
 
-    }
+    }*/
 
     public String toPrintFinalPreferences() {
         int[] preferences = new int[input.getNumbPreferences() + 1];

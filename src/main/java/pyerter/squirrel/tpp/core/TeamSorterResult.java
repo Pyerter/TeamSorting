@@ -183,7 +183,7 @@ public class TeamSorterResult {
         for (int i = 0; i < input.numbMembers(); i++) {
             Optional<Friendship> friendship = input.tryGetFriendship(input.getMember(i).getName());
             if (friendship.isPresent()) {
-                if (!friendshipMap.containsValue(friendship.get())) {
+                if (!friendshipIndexMap.containsKey(friendship.get())) {
                     friendshipIndexMap.put(friendship.get(), friendCount);
                     friendCount++;
                 }
@@ -399,7 +399,7 @@ public class TeamSorterResult {
 
         values[index + 7] = "" + min;
         values[index + 8] = "" + max;
-        values[index + 9] = "" + total;
+        values[index + 9] = "" + average;
         values[index + 10] = "" + (input.numbMembers() - total);
 
 

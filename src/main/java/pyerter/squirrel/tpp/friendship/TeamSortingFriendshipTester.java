@@ -21,29 +21,29 @@ public class TeamSortingFriendshipTester {
             count = 1;
         }
         for (int i = 0; i < count; i++) {
-            runTest(args);
+            runTest(i > 1 ? 0 : 3);
         }
     }
 
-    public static void runTest(String[] args) {
-        int memberCount = 40;
+    public static void runTest(int verb) {
+        int memberCount = 75;
         int teamCount = 5;
-        int roleCount = 4;
-        int preferenceCount = 3;
+        int roleCount = 3;
+        int preferenceCount = 2;
         // Role requirements for each team
-        int roleReqLB = 1;
-        int roleReqUB = 2;
+        int roleReqLB = 2;
+        int roleReqUB = 5;
         // Minimum team sizes
-        int minTeamCountLB = 4;
-        int minTeamCountUB = 8;
+        int minTeamCountLB = 7;
+        int minTeamCountUB = 15;
         // Number of roles members have
         int memberRoleCountLB = 1;
-        int memberRoleCountUB = 4;
+        int memberRoleCountUB = 3;
         //if (memberCount < roleCount * roleReqUB * teamCount) memberCount = roleCount * roleReqUB * teamCount;
         //if (memberCount < minTeamCountUB * teamCount) memberCount = minTeamCountUB * teamCount;
-        int numbFriendships = 5 + ((int)(Math.random() * 5));
+        int numbFriendships = 5 + ((int)(Math.random() * 11));
         int friendshipSizeLB = 2;
-        int friendshipSizeUB = 3;
+        int friendshipSizeUB = 4;
 
         TeamSortingInput input = TeamSortingGeneratorInput.generateInput(memberCount, teamCount, roleCount, preferenceCount,
                 roleReqLB, roleReqUB, minTeamCountLB, minTeamCountUB, memberRoleCountLB, memberRoleCountUB,
@@ -72,29 +72,31 @@ public class TeamSortingFriendshipTester {
         System.out.printf("%n----- Solving Team Sorting -----%n%n");
 
         TeamSorterSolver solver = new TeamSorterSolver(input, false);
-        solver.setUseHardPreferenceObjectiveFunction(false);
+        /*solver.setUseHardPreferenceObjectiveFunction(false);
         solver.setIgnoreFriendships(false);
-        solver.setRoundFriendships(true);
+        solver.setRoundFriendships(true);*/
         TeamSortingLogger logger;
         TeamSorterResult result;
         TeamSorterResult roundedResult;
-        boolean caughtFailure = false;
+        /*boolean caughtFailure = false;
         String failureMessage = "";
         try {
             logger = new TeamSortingLogger(1);
             result = solver.solve(logger);
             roundedResult = result.getRoundedResult();
         } catch (Exception e) {
-            solver.setUseHardPreferenceObjectiveFunction(false);
-            solver.setIgnoreFriendships(true);
-            solver.setRoundFriendships(true);
-            logger = new TeamSortingLogger(3);
-            result = solver.solve(logger);
-            roundedResult = result.getRoundedResult();
+
             caughtFailure = true;
             failureMessage = e.getMessage();
             //e.printStackTrace();
-        }
+        }*/
+
+        solver.setUseHardPreferenceObjectiveFunction(false);
+        solver.setIgnoreFriendships(true);
+        solver.setRoundFriendships(true);
+        logger = new TeamSortingLogger(verb);
+        result = solver.solve(logger);
+        roundedResult = result.getRoundedResult();
 
         boolean usingRounded = roundedResult != null;
 
@@ -115,13 +117,16 @@ public class TeamSortingFriendshipTester {
             logger.log(String.format("Maximum value        (friendship objective): %.3f", (result.getTheoreticalMaxFriendshipObjectiveValue())));
             logger.log(String.format("Maximum value          (standard objective): %.3f", (result.getTheoreticalMaxObjectiveValue())));
         }
-        if (caughtFailure) {
+        /*if (caughtFailure) {
             System.out.println("--------- Original attempt failed, retried with rounding algorithm on LP without friendship constraints");
             System.out.printf("Failure Message: %s%n", failureMessage);
-        }
+        }*/
 
+        CsvResultWriter.subdirectoryName = "genexperiment";
         CsvResultWriter.writeResultToFile(result, "genexperiment");
+        CsvResultWriter.subdirectoryName = "genexperiment_rounded";
         if (usingRounded) CsvResultWriter.writeResultToFile(roundedResult, "genexperiment_rounded");
+        CsvResultWriter.subdirectoryName = "genexperiment_input";
         CsvReader.writeProblemInputCsv(input, "genexperiment_input");
     }
 
